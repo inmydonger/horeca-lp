@@ -526,7 +526,7 @@ export function createGlobe({ canvas, overlay, labels, reduceMotion = false, bas
         const pts = r.pts.map((v) => proj(spinToWorld(v)));
         const n = Math.max(2, Math.round(t * (pts.length - 1)) + 1);
         // the line the comet leaves behind: fades in from the origin, never a solid band
-        line(pts.slice(0, n), { a0: 0, a1: far ? 0.4 : 0.7, w0: 0.6, w1: (far ? 1.0 : 1.4) * sk, dash: far ? 3 : 0 });
+        line(pts.slice(0, n), { a0: far ? 0 : 0.2, a1: far ? 0.55 : 0.95, w0: 0.8, w1: (far ? 1.1 : 1.8) * sk, dash: far ? 3 : 0 });
       }
       const o = proj(spinToWorld(r.origin)); r.screen = o;
       if (originVis > 0) dot(o.x, o.y, (far ? 3.2 : 5) * sk, '#fff', ORANGE, far ? 1.5 : 2, originVis * o.v);

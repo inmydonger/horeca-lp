@@ -130,6 +130,8 @@ if (!reduce) {
 })();
 
 /* ---------------- range ---------------- */
+// Mouse: hover/focus reveals the title (meat lifts, title slides down from behind it).
+// Touch: the card nearest the middle of the screen reveals as you scroll; tap toggles too.
 const cuts = $$('.cut');
 const setCut = (c, on) => { c.classList.toggle('is-on', on); c.setAttribute('aria-pressed', String(on)); };
 cuts.forEach((c, i) => {
@@ -141,10 +143,13 @@ cuts.forEach((c, i) => {
     c.addEventListener('blur', () => setCut(c, false));
   } else {
     c.addEventListener('click', () => { const on = !c.classList.contains('is-on'); cuts.forEach((o) => setCut(o, false)); setCut(c, on); });
+    ScrollTrigger.create({ trigger: c, start: 'top 65%', end: 'bottom 35%', onToggle: (s) => setCut(c, s.isActive) });
   }
   if (!reduce) {
     gsap.from(c, { y: 60, opacity: 0, duration: 1.2, ease: 'expo.out', delay: i * 0.08, scrollTrigger: { trigger: '.cards', start: 'top 85%' } });
+    // Levitation keeps running during hover; the hover lift is on `translate`, so the two add up.
     gsap.to($('.cut__meat', c), { y: -10, duration: 2.6 + i * 0.3, ease: 'sine.inOut', yoyo: true, repeat: -1, delay: i * 0.5 });
+    gsap.to($('.cut__shadow', c), { scaleX: 0.9, duration: 2.6 + i * 0.3, ease: 'sine.inOut', yoyo: true, repeat: -1, delay: i * 0.5 });
   }
 });
 
