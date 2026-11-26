@@ -91,10 +91,14 @@ def bake(name, file, box, depth):
     cols = np.nonzero(bottom >= 0)[0]
     near_col = cols[np.abs(np.arange(W)[:, None] - cols[None, :]).argmin(axis=1)]
     floor = bottom[near_col]
-    below = np.clip((rows - (floor[None, :] - r(0.012, 1))) / r(0.025, 2), 0, 1)
+    # Smooth the contour sideways and soften the gate, or column-to-column jitter in the cut-out's
+    # edge shows up as vertical streaks in the rim.
+    k = max(3, int(r(0.02, 4)) | 1)
+    floor = np.convolve(np.pad(floor, k // 2, mode='edge'), np.ones(k) / k, mode='valid')
+    below = blur(np.clip((rows - (floor[None, :] - r(0.012, 1))) / r(0.025, 2), 0, 1), r(0.006, 1.5))
 
     # Contact: a thin dark occlusion under the contour, then a short falloff.
-    c1 = blur(shift(mask, r(0.004, 0.5), r(0.01, 1.2)), r(0.007, 1.2)) * 0.85 * below
+    c1 = blur(shift(mask, r(0.004, 0.5), r(0.01, 1.5)), r(0.009, 2.2)) * 0.85 * below
     c2 = blur(shift(foot, r(0.015, 1.5), r(0.03, 2.5)), r(0.025, 3)) * 0.5 * np.maximum(below, 0.35)
     contact = screen(c1, c2)
 
