@@ -34,6 +34,7 @@ body {
   -webkit-tap-highlight-color: transparent;
   overflow-x: clip;
 }
+html { overflow-x: clip; }
 img, svg, canvas { display: block; max-width: 100%; }
 img { user-select: none; -webkit-user-drag: none; }
 a { color: inherit; }
@@ -117,7 +118,7 @@ ol, ul { margin: 0; padding: 0; list-style: none; }
 @media (max-width: 380px) { .nav__login { display: none; } }
 
 /* ---------- hero ---------- */
-.hero { position: relative; overflow: clip; }
+.hero { position: relative; } /* no clipping: visuals may spill past the section; body clips horizontal overflow */
 .hero__frame {
   --u: calc(min(100vw, var(--maxw)) / 1440);
   position: relative; max-width: var(--maxw); margin: 0 auto;
@@ -152,7 +153,7 @@ ol, ul { margin: 0; padding: 0; list-style: none; }
 /* ---------- origin (pinned globe) ---------- */
 .origin { position: relative; }
 .origin__track { height: 320vh; }
-.origin__stage { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; }
+.origin__stage { position: sticky; top: 0; height: 100vh; height: 100svh; }
 .origin__gl, .origin__ov { position: absolute; inset: 0; width: 100%; height: 100%; }
 .origin__ov { pointer-events: none; }
 .origin__labels { position: absolute; inset: 0; pointer-events: none; }
@@ -212,7 +213,7 @@ ol, ul { margin: 0; padding: 0; list-style: none; }
 
 /* ---------- cold chain ---------- */
 .cold__track { height: 400vh; }
-.cold__stage { position: sticky; top: 0; height: 100vh; height: 100svh; display: flex; align-items: center; overflow: hidden; }
+.cold__stage { position: sticky; top: 0; height: 100vh; height: 100svh; display: flex; align-items: center; }
 .cold__grid { display: grid; grid-template-columns: minmax(0, 580px) minmax(0, 1fr); gap: 40px; align-items: center; }
 .cold__copy .h2 { margin-bottom: 22px; }
 .cold__copy .lead { color: var(--ink); max-width: 38ch; margin-bottom: 40px; }
@@ -344,10 +345,15 @@ ol, ul { margin: 0; padding: 0; list-style: none; }
 }
 
 /* ---------- proof ---------- */
-.proof { text-align: center; padding-bottom: clamp(80px, 8vw, 120px); }
-.proof__num { font-size: clamp(84px, 18.3vw, 264px); letter-spacing: -.055em; line-height: .9; font-variant-numeric: tabular-nums; }
+/* Pinned while the pyramid builds, so everything must fit one screen:
+   number scales with viewport height too, and the pyramid width follows the height left over. */
+.proof {
+  text-align: center; min-height: 100svh; display: flex; flex-direction: column; justify-content: center;
+  padding-block: clamp(84px, 11svh, 112px) clamp(24px, 4svh, 48px);
+}
+.proof__num { font-size: clamp(72px, min(18.3vw, 22svh), 264px); letter-spacing: -.055em; line-height: .9; font-variant-numeric: tabular-nums; }
 .proof__lead { margin-top: clamp(20px, 2.4vw, 36px); font-size: clamp(15px, 1.2vw, 17px); color: var(--ink); }
-.proof .stagebox { margin-top: clamp(32px, 3.5vw, 56px); }
+.proof .stagebox { margin: clamp(24px, 4svh, 48px) auto 0; width: min(100%, calc((100svh - 250px - min(16.5vw, 19.8svh)) * 2.128)); }
 .pyramid { position: relative; width: 100%; aspect-ratio: 1000 / 470; }
 .pyramid img.u { position: absolute; height: auto; will-change: transform, opacity; }
 .pyramid__ground { position: absolute; left: -6%; right: -6%; width: 112%; bottom: -6%; height: 14%; max-width: none; }
@@ -389,7 +395,7 @@ ol, ul { margin: 0; padding: 0; list-style: none; }
 @media (max-width: 560px) { .form { padding: 26px 20px; border-radius: 20px; } .form .btn { width: 100%; } }
 
 /* ---------- footer ---------- */
-.footer { padding: clamp(64px, 6vw, 96px) 0 0; overflow: hidden; }
+.footer { padding: clamp(64px, 6vw, 96px) 0 0; }
 .footer__grid { max-width: var(--maxw); margin: 0 auto; padding: 0 var(--pad); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 260px); gap: 40px; font-size: 15px; line-height: 1.7; }
 .footer__col { display: grid; gap: 18px; align-content: start; }
 .footer__col--wide { max-width: 430px; gap: 22px; }

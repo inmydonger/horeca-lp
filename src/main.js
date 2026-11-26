@@ -282,7 +282,12 @@ function fmtProof(v) {
 }
 if (!reduce) {
   const byRow = (r) => units.filter((u) => +u.dataset.row === r);
-  const tl = gsap.timeline({ scrollTrigger: { trigger: pyr, start: 'top 85%', end: 'bottom 60%', scrub: 0.6 } });
+  // Pinned: the section holds still while the 300 ribeyes stack and the counter runs,
+  // and lets go only when the pyramid is complete. Animation starts as the section rises
+  // into view and ends exactly at the pin's end.
+  const PIN = 1.4; // pinned scroll distance, in viewport heights
+  const pinST = ScrollTrigger.create({ trigger: '.proof', start: 'top top', end: () => '+=' + innerHeight * PIN, pin: true, anticipatePin: 1 });
+  const tl = gsap.timeline({ scrollTrigger: { trigger: '.proof', start: 'top 45%', end: () => pinST.end, scrub: 0.6 } });
   for (let r = ROWS - 1; r >= 0; r--) {
     tl.from(byRow(r), { y: -60, opacity: 0, duration: 1, ease: 'power3.out', stagger: { each: 0.03, from: 'random' } }, (ROWS - 1 - r) * 0.25);
   }
