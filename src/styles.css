@@ -86,16 +86,27 @@ ol, ul { margin: 0; padding: 0; list-style: none; }
 /* ---------- nav (Figma 26:128) ---------- */
 .nav {
   position: fixed; inset: 0 0 auto; z-index: 50; background: transparent;
-  transition: background-color .35s var(--ease-out), backdrop-filter .35s var(--ease-out), -webkit-backdrop-filter .35s var(--ease-out), box-shadow .35s var(--ease-out), transform .45s var(--ease-out);
+  transition: transform .45s var(--ease-out);
 }
-/* After scrolling: frosted glass, so the links stay legible over any section. */
-.nav.is-pill {
-  background: rgb(251 248 238 / .62);
-  -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4);
-  box-shadow: 0 1px 0 rgb(26 24 20 / .06);
+/* Progressive (linear) blur once scrolled: three stacked backdrop blurs, each masked to a
+   band that fades toward the bottom, plus a cream tint that fades the same way. The result
+   is strongest behind the links and melts into the page with no hard edge. */
+.nav::before, .nav::after, .nav__blur {
+  content: ''; position: absolute; left: 0; right: 0; top: 0; height: calc(100% + 48px);
+  pointer-events: none; z-index: -1; opacity: 0; transition: opacity .4s var(--ease-out);
 }
+.nav::before {
+  -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+  -webkit-mask-image: linear-gradient(#000 60%, transparent); mask-image: linear-gradient(#000 60%, transparent);
+}
+.nav::after {
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  background: linear-gradient(rgb(251 248 238 / .78), rgb(251 248 238 / .45) 55%, rgb(251 248 238 / 0));
+  -webkit-mask-image: linear-gradient(#000 40%, transparent 85%); mask-image: linear-gradient(#000 40%, transparent 85%);
+}
+.nav.is-pill::before, .nav.is-pill::after { opacity: 1; }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .nav.is-pill { background: rgb(251 248 238 / .94); }
+  .nav::after { background: linear-gradient(rgb(251 248 238 / .95), rgb(251 248 238 / .7) 55%, rgb(251 248 238 / 0)); }
 }
 .nav__inner {
   max-width: var(--maxw); margin: 0 auto; padding: 28px var(--pad);
