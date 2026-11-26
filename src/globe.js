@@ -12,8 +12,10 @@
  *   - land is a RAISED clay slab: rounded shoulder, a crease where it meets
  *     the sea, and a real cast shadow towards the lower right;
  *   - fine clay grain is procedural, so it is crisp at any zoom.
- * Orbits, routes and pins are 2D vector strokes on an overlay canvas,
- * projected from 3D each frame: thin, tapered comet trails, never rings.
+ * Comets (orbiting satellites, route draws, resting pulses) are GPU point
+ * particles in the same WebGL scene: a bright head that sheds grains which
+ * drift, shrink and fade, hidden correctly behind the globe.
+ * The overlay canvas holds the vector bits: faint route lines, pins, ground shadow.
  *
  * API
  *   const g = createGlobe({ canvas, overlay, labels, reduceMotion, base })
@@ -27,12 +29,12 @@
 import {
   WebGLRenderer, Scene, PerspectiveCamera, Group, Mesh, SphereGeometry, ShaderMaterial,
   TextureLoader, Vector3, Matrix4, Euler, Color, RepeatWrapping, ClampToEdgeWrapping,
+  BufferGeometry, BufferAttribute, Points, DynamicDrawUsage,
   LinearMipmapLinearFilter, LinearFilter, NoColorSpace,
 } from 'three';
 
 const ORANGE = '#E54E26';
 const BLUE = '#224096';
-const HALO = 'rgba(250,246,234,'; // cream halo under strokes, so routes read over terracotta land
 const JKT = [-6.2, 106.85];
 // Origins. Japan is in the design but still needs confirmation; New Zealand is a
 // placeholder for "other trusted origins" (no label, dashed, quieter).
@@ -92,7 +94,8 @@ varying vec2 vUv;
 varying vec3 vObj;
 varying vec3 vWorld;
 
-float sdAt(vec2 uv){ return (texture(uLand, uv).r - 0.5) * 2.0 * uRange; }
+// sampled with a +1 mip bias: rounds coastline corners like pressed clay; the edge itself stays pixel-sharp
+float sdAt(vec2 uv){ return (texture(uLand, uv, 1.0).r - 0.5) * 2.0 * uRange; }
 float prof(float sd){ float x = clamp(sd / uBevel, 0.0, 1.0); float k = 1.0 - x; return 1.0 - k*k*k; }
 float dprof(float sd){ float x = clamp(sd / uBevel, 0.0, 1.0); float k = 1.0 - x; return sd > 0.0 ? 3.0*k*k / uBevel : 0.0; }
 
@@ -121,7 +124,7 @@ void main(){
   vec3 N = cross(n, E);                                // north
   float fwObj = length(fwidth(vObj));                  // pixel footprint on the unit sphere
 
-  vec4 tx = texture(uLand, vUv);
+  vec4 tx = texture(uLand, vUv, 1.0);
   float sd = (tx.r - 0.5) * 2.0 * uRange;              // texels, + on land
   float px = max(fwidth(sd), 1e-3);
   float land = smoothstep(-0.6 * px, 0.6 * px, sd);    // pixel-sharp coastline
@@ -134,9 +137,9 @@ void main(){
   vec2 tilt = -slope * g;                              // normal leans downhill, towards the sea
 
   // --- clay grain: soft thumb dents on land, felt grain everywhere
-  vec2 gr = ngrad(n, E, N, 30.0, fwObj) * mix(0.04, 0.10, land)
-          + ngrad(n, E, N, 190.0, fwObj) * mix(0.10, 0.07, land)
-          + ngrad(n, E, N, 520.0, fwObj) * 0.05;
+  vec2 gr = ngrad(n, E, N, 26.0, fwObj) * mix(0.04, 0.09, land)
+          + ngrad(n, E, N, 170.0, fwObj) * mix(0.07, 0.05, land)
+          + ngrad(n, E, N, 480.0, fwObj) * 0.03;
   tilt -= gr;
 
   vec3 nObj = normalize(n + E * tilt.x + N * tilt.y);
@@ -153,15 +156,15 @@ void main(){
     vec2 dir = Lt / lt;
     float tanEl = sinEl / lt;
     float h0 = uSlab * prof(sd);
-    for (int i = 1; i <= 7; i++) {
-      float t = float(i) * 1.6;
+    for (int i = 1; i <= 8; i++) {
+      float t = float(i) * 1.9;
       vec2 o = vec2(dir.x * t * du / cl, dir.y * t * dv);
       float diff = uSlab * prof(sdAt(vUv + o)) - (h0 + t * tanEl);
-      shadow = max(shadow, smoothstep(0.0, 1.6, diff) * (1.0 - float(i) / 9.0));
+      shadow = max(shadow, smoothstep(-0.5, 3.5, diff) * (1.0 - float(i) / 10.0));
     }
   }
   // contact crease where clay meets the sea
-  float crease = (1.0 - land) * exp(-max(-sd, 0.0) / 2.2);
+  float crease = (1.0 - land) * exp(-max(-sd, 0.0) / 3.2);
 
   // --- albedo
   float lat = asin(clamp(n.y, -1.0, 1.0));
@@ -174,15 +177,15 @@ void main(){
   vec3 alb = mix(sea, ground, land);
 
   // --- light (clay: soft wrap diffuse, low broad sheen)
-  float wrap = 0.3;
+  float wrap = 0.45;
   float kd = max(0.0, (dot(nW, uKeyDir) + wrap) / (1.0 + wrap));
-  kd *= 1.0 - 0.75 * shadow;
+  kd *= 1.0 - 0.6 * shadow;
   float fd = max(0.0, dot(nW, uFillDir));
   vec3 amb = mix(uGround, uSky, nW.y * 0.5 + 0.5);
-  float ao = 1.0 - 0.45 * crease;
+  float ao = 1.0 - 0.4 * crease;
   vec3 V = normalize(cameraPosition - vWorld);
   vec3 Hh = normalize(uKeyDir + V);
-  float spec = pow(max(dot(nW, Hh), 0.0), mix(14.0, 22.0, land)) * mix(0.035, 0.07, land) * (1.0 - shadow);
+  float spec = pow(max(dot(nW, Hh), 0.0), mix(9.0, 12.0, land)) * mix(0.03, 0.06, land) * (1.0 - shadow);
   vec3 col = alb * (uKeyCol * kd + uFillCol * fd + amb * ao) * mix(1.0, ao, 0.6) + uKeyCol * spec;
 
   // soft edge falloff so the ball sits in the cream page (no hard dark rim)
@@ -190,6 +193,34 @@ void main(){
   col = mix(col, uBg, fres * 0.18);
 
   gl_FragColor = vec4(toSRGB(col), uReady);
+}`;
+
+
+// Comet particles: soft GPU point sprites, depth-tested against the globe.
+const PVERT = /* glsl */ `
+attribute float aSize;
+attribute float aAlpha;
+attribute float aHeat;
+uniform float uPx;
+varying float vA;
+varying float vH;
+void main(){
+  vA = aAlpha; vH = aHeat;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  gl_PointSize = aSize * uPx;
+}`;
+const PFRAG = /* glsl */ `
+precision highp float;
+uniform vec3 uCol, uHot;
+varying float vA;
+varying float vH;
+void main(){
+  vec2 c = gl_PointCoord * 2.0 - 1.0;
+  float d = dot(c, c);
+  if (d > 1.0) discard;
+  float soft = exp(-d * 2.2) * (1.0 - d * d);   // gaussian grain, zero at the sprite edge
+  float core = exp(-d * 9.0);
+  gl_FragColor = vec4(mix(uCol, uHot, core * vH), vA * soft);
 }`;
 
 // ---------------------------------------------------------------- globe
@@ -221,9 +252,9 @@ export function createGlobe({ canvas, overlay, labels, reduceMotion = false, bas
     uLand: { value: tex },
     uRange: { value: LAND_RANGE },
     uTexel: { value: 1 / LAND_SIZE },
-    uBevel: { value: 11.0 },        // shoulder width, texels
-    uSlab: { value: 7.0 },         // slab height, texels (drives shoulder slope + shadow length)
-    uDisp: { value: 7.0 * (2 * Math.PI / LAND_SIZE) },
+    uBevel: { value: 16.0 },        // shoulder width, texels
+    uSlab: { value: 9.0 },         // slab height, texels (drives shoulder slope + shadow length)
+    uDisp: { value: 9.0 * (2 * Math.PI / LAND_SIZE) },
     uReady: { value: 0 },
     uKeyDir: { value: keyDir },
     uKeyObj: { value: new Vector3() },
@@ -242,10 +273,12 @@ export function createGlobe({ canvas, overlay, labels, reduceMotion = false, bas
   const mat = new ShaderMaterial({ uniforms, vertexShader: VERT, fragmentShader: FRAG, transparent: true });
   const geo = new SphereGeometry(1, 512, 256);
   const globe = new Mesh(geo, mat);
+  globe.renderOrder = 1;
   spin.add(globe);
 
   // ---- routes (spin-local)
-  const jLocal = ll(JKT[0], JKT[1], 1.012);
+  const R0 = 1.02; // just above the clay slab tops
+  const jLocal = ll(JKT[0], JKT[1], R0);
   const routes = ORIGINS.map((o, i) => {
     const a = ll(o.p[0], o.p[1], 1).normalize();
     const b = ll(JKT[0], JKT[1], 1).normalize();
@@ -255,9 +288,9 @@ export function createGlobe({ canvas, overlay, labels, reduceMotion = false, bas
     for (let k = 0; k <= n; k++) {
       const t = k / n, s = Math.sin(ang);
       const v = a.clone().multiplyScalar(Math.sin((1 - t) * ang) / s).add(b.clone().multiplyScalar(Math.sin(t * ang) / s));
-      pts.push(v.multiplyScalar(1.012 + lift * Math.sin(Math.PI * t)));
+      pts.push(v.multiplyScalar(R0 + lift * Math.sin(Math.PI * t)));
     }
-    return { o, pts, origin: ll(o.p[0], o.p[1], 1.012), delay: i * 0.016, phase: (i * 0.37) % 1, w: new Array(n + 1) };
+    return { o, pts, origin: ll(o.p[0], o.p[1], R0), delay: i * 0.016, phase: (i * 0.37) % 1, w: new Array(n + 1) };
   });
 
   // ---- satellites on tilted orbits (world-local: they don't spin with the globe)
@@ -268,6 +301,60 @@ export function createGlobe({ canvas, overlay, labels, reduceMotion = false, bas
   ].map((d) => ({ ...d, m: new Matrix4().makeRotationFromEuler(d.rot) }));
   // two satellites per orbit; the first ones drop onto the route origins, the rest fade out
   const sats = Array.from({ length: 6 }, (_, i) => ({ orbit: orbits[i % 3], phase: (i / 3 | 0) * Math.PI + i * 0.9, route: i < ORIGINS.length ? i : -1 }));
+
+
+  // ---- comet particles (one dynamic point cloud for every comet)
+  const PMAX = 2400;
+  const pPos = new Float32Array(PMAX * 3), pSize = new Float32Array(PMAX), pAlpha = new Float32Array(PMAX), pHeat = new Float32Array(PMAX);
+  const pGeo = new BufferGeometry();
+  const attr = (a, n) => new BufferAttribute(a, n).setUsage(DynamicDrawUsage);
+  pGeo.setAttribute('position', attr(pPos, 3));
+  pGeo.setAttribute('aSize', attr(pSize, 1));
+  pGeo.setAttribute('aAlpha', attr(pAlpha, 1));
+  pGeo.setAttribute('aHeat', attr(pHeat, 1));
+  const pMat = new ShaderMaterial({
+    uniforms: { uPx: { value: 1 }, uCol: { value: new Vector3(0.898, 0.306, 0.149) }, uHot: { value: new Vector3(1.0, 0.86, 0.72) } },
+    vertexShader: PVERT, fragmentShader: PFRAG, transparent: true, depthWrite: false, depthTest: true,
+  });
+  const points = new Points(pGeo, pMat);
+  points.frustumCulled = false;
+  points.renderOrder = 2;
+  scene.add(points);
+  let pc = 0;
+  const rnd = (a, b) => { const x = Math.sin(a * 12.9898 + b * 78.233) * 43758.5453; return x - Math.floor(x); };
+  function emit(P, size, alpha, heat) {
+    if (pc >= PMAX || alpha <= 0.003) return;
+    pPos[pc * 3] = P.x; pPos[pc * 3 + 1] = P.y; pPos[pc * 3 + 2] = P.z;
+    pSize[pc] = size; pAlpha[pc] = Math.min(1, alpha); pHeat[pc] = heat; pc++;
+  }
+  const cP = new Vector3();
+  // A comet: a bright head plus grains it sheds. Each grain is born at the head, stays roughly
+  // where it was shed, drifts a little sideways, shrinks and fades. Stateless (seeded), so it
+  // looks the same whether you scroll forwards or back.
+  function comet(id, pathAt, h, L, { n = 70, a = 1, size = 1, spread = 0.03, life = 0.9, uMin = -Infinity, sk = 1 }) {
+    if (a <= 0.003) return;
+    const S = world.scale.x;
+    for (let i = 0; i < n; i++) {
+      const seed = id * 977 + i;
+      const r1 = rnd(seed, 1), r2 = rnd(seed, 2), r3 = rnd(seed, 3);
+      const b = (r1 + clock / (life * (0.75 + 0.5 * r2))) % 1; // age, 0 = just shed
+      const u = h - b * L * (0.85 + 0.3 * r3);
+      if (u < uMin) continue;
+      pathAt(u, cP);
+      const j = spread * S * Math.pow(b, 1.2) * (0.35 + r3);
+      cP.x += (rnd(seed, 4) - 0.5) * 2 * j; cP.y += (rnd(seed, 5) - 0.5) * 2 * j; cP.z += (rnd(seed, 6) - 0.5) * 2 * j;
+      const tw = 0.7 + 0.3 * Math.sin(clock * (6 + 6 * r2) + r1 * 40);
+      emit(cP, sk * size * (1.6 + 4.6 * (1 - b) * (0.4 + 0.8 * r2)), a * Math.pow(1 - b, 1.35) * tw, (1 - b) * (r3 > 0.7 ? 0.9 : 0.3));
+    }
+    pathAt(h, cP);
+    emit(cP, 34 * sk * size, 0.2 * a, 0.0);    // halo
+    emit(cP, 15 * sk * size, a, 1);            // head
+  }
+  // route i as a function of u ∈ [0, 1] (origin → Jakarta), in world space
+  function routeAt(r) {
+    const n = r.pts.length - 1;
+    return (u, out) => { const x = clamp(u, 0, 1) * n, k = Math.min(n - 1, x | 0), f = x - k; return spinToWorld(out.copy(r.pts[k]).lerp(r.pts[k + 1], f), out); };
+  }
 
   // ---- labels
   const mkLabel = (txt, cls) => { const d = document.createElement('div'); d.className = 'globe-label ' + (cls || ''); d.textContent = txt; labels && labels.appendChild(d); return d; };
@@ -283,6 +370,7 @@ export function createGlobe({ canvas, overlay, labels, reduceMotion = false, bas
     vw = Math.max(1, r.width); vh = Math.max(1, r.height);
     dpr = Math.min(window.devicePixelRatio || 1, 2);
     renderer.setPixelRatio(dpr);
+    pMat.uniforms.uPx.value = dpr;
     renderer.setSize(vw, vh, false);
     overlay.width = Math.round(vw * dpr); overlay.height = Math.round(vh * dpr);
     cam.aspect = vw / vh; cam.updateProjectionMatrix();
@@ -313,25 +401,20 @@ export function createGlobe({ canvas, overlay, labels, reduceMotion = false, bas
   const spinToWorld = (v, out = new Vector3()) => out.copy(v).applyMatrix4(spin.matrixWorld);
   const proj = (worldV) => { const [x, y] = toScreen(worldV); return { x, y, v: visibility(worldV) }; };
 
-  // Tapered comet stroke: alpha and width ramp from tail (0) to head (1).
-  // Butt-capped segments (no bead-like overlaps), with a cream halo pass underneath.
-  function comet(pts, { a0 = 0, a1 = 1, w0 = 0.3, w1 = 1.8, color = ORANGE, halo = 0.55, dash = null, gamma = 1.4 }) {
+  // Thin vector line with an alpha/width ramp from tail (0) to head (1); butt caps so segments never bead.
+  function line(pts, { a0 = 0, a1 = 1, w0 = 0.6, w1 = 1.4, dash = 0, gamma = 0.8 }) {
     const n = pts.length; if (n < 2) return;
-    ctx.lineCap = 'butt'; ctx.lineJoin = 'round';
-    for (const pass of halo > 0 ? [0, 1] : [1]) {
-      for (let i = 1; i < n; i++) {
-        const p0 = pts[i - 1], p1 = pts[i];
-        const vis = Math.min(p0.v, p1.v); if (vis <= 0.01) continue;
-        if (dash) { const on = Math.floor(i / dash[0]) % 2 === 0; if (!on) continue; }
-        const t = Math.pow(i / (n - 1), gamma);
-        const a = (a0 + (a1 - a0) * t) * vis; if (a <= 0.004) continue;
-        const w = w0 + (w1 - w0) * t;
-        ctx.beginPath(); ctx.moveTo(p0.x * dpr, p0.y * dpr); ctx.lineTo(p1.x * dpr, p1.y * dpr);
-        if (pass === 0) { ctx.strokeStyle = HALO + (a * a * halo).toFixed(3) + ')'; ctx.lineWidth = (w + 1.8) * dpr; }
-        else { ctx.strokeStyle = color; ctx.globalAlpha = a; ctx.lineWidth = w * dpr; }
-        ctx.stroke(); ctx.globalAlpha = 1;
-      }
+    ctx.lineCap = 'butt'; ctx.strokeStyle = ORANGE;
+    for (let i = 1; i < n; i++) {
+      const p0 = pts[i - 1], p1 = pts[i];
+      const vis = Math.min(p0.v, p1.v); if (vis <= 0.01) continue;
+      if (dash && Math.floor(i / dash) % 2) continue;
+      const t = Math.pow(i / (n - 1), gamma);
+      const a = (a0 + (a1 - a0) * t) * vis; if (a <= 0.004) continue;
+      ctx.globalAlpha = a; ctx.lineWidth = (w0 + (w1 - w0) * t) * dpr;
+      ctx.beginPath(); ctx.moveTo(p0.x * dpr, p0.y * dpr); ctx.lineTo(p1.x * dpr, p1.y * dpr); ctx.stroke();
     }
+    ctx.globalAlpha = 1;
   }
   function dot(x, y, r, fill, stroke, sw, alpha = 1) {
     if (alpha <= 0.004) return;
@@ -340,13 +423,6 @@ export function createGlobe({ canvas, overlay, labels, reduceMotion = false, bas
     if (fill) { ctx.fillStyle = fill; ctx.fill(); }
     if (stroke) { ctx.lineWidth = sw * dpr; ctx.strokeStyle = stroke; ctx.stroke(); }
     ctx.globalAlpha = 1;
-  }
-  function glow(x, y, r, color, alpha) {
-    if (alpha <= 0.004) return;
-    const g = ctx.createRadialGradient(x * dpr, y * dpr, 0, x * dpr, y * dpr, r * dpr);
-    g.addColorStop(0, color); g.addColorStop(1, 'rgba(229,78,38,0)');
-    ctx.globalAlpha = alpha; ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(x * dpr, y * dpr, r * dpr, 0, Math.PI * 2); ctx.fill(); ctx.globalAlpha = 1;
   }
   function orbitPoint(orbit, ang, out = new Vector3()) {
     out.set(Math.cos(ang) * orbit.r, 0, Math.sin(ang) * orbit.r).applyMatrix4(orbit.m);
@@ -401,74 +477,57 @@ export function createGlobe({ canvas, overlay, labels, reduceMotion = false, bas
     // key light in globe object space (rotation only)
     invSpin.copy(globe.matrixWorld).invert();
     uniforms.uKeyObj.value.copy(keyDir).transformDirection(invSpin);
-    renderer.render(scene, cam);
-
-    // ---------- overlay ----------
-    ctx.clearRect(0, 0, overlay.width, overlay.height);
-    const [gcx, gcy] = toScreen(world.position);
-    const edge = toScreen(tmpO.copy(world.position).add(new Vector3(world.scale.x, 0, 0)));
-    const gR = Math.abs(edge[0] - gcx) * 1.0;
-    groundShadow(gcx, gcy, gR, uniforms.uReady.value * 0.9);
 
     const satOn = seg(p, 0.3, 0.44);
     const drop = ease(seg(p, 0.6, 0.68));
-    const sk = clamp(world.scale.x / (0.4 * unit), 0.7, 1.3); // stroke scale with globe size
+    const sk = clamp(world.scale.x / (0.4 * unit), 0.7, 1.3); // sprite scale with globe size
+    const originVis = seg(p, 0.62, 0.7);
 
-    // satellites: short comet arcs on tilted orbits (no full rings)
+    // ---------- particle comets ----------
+    pc = 0;
+    // satellites on tilted orbits; at the drop they fall onto the route origins
     if (satOn > 0 && drop < 1) {
       sats.forEach((s, i) => {
-        const o = s.orbit, head = clock * o.speed + s.phase, N = 64, span = 1.9;
-        const tl = [];
+        const o = s.orbit, head = clock * o.speed + s.phase;
         const rt = s.route >= 0 ? routes[s.route] : null;
         const to = drop > 0 && rt ? spinToWorld(rt.origin) : null;
-        for (let k = 0; k <= N; k++) {
-          const P = orbitPoint(o, head - span + (k / N) * span);
-          if (to) P.lerp(to, drop);
-          tl.push(proj(P));
-        }
-        const k = satOn * (rt ? 1 - drop * 0.4 : 1 - drop) * (rt && rt.o.far ? 0.7 : 1);
-        comet(tl, { a0: 0, a1: k, w0: 0.2, w1: 2.0 * sk, gamma: 1.5, halo: 0.35 });
-        const h = tl[tl.length - 1];
-        glow(h.x, h.y, 9 * sk, 'rgba(229,78,38,0.35)', k * h.v);
-        dot(h.x, h.y, 3 * sk, ORANGE, null, 0, k * h.v);
+        const path = (u, out) => { orbitPoint(o, u, out); if (to) out.lerp(to, drop); return out; };
+        const a = satOn * (rt ? 1 - drop * 0.3 : 1 - drop) * (rt && rt.o.far ? 0.7 : 1);
+        comet(10 + i, path, head, 1.5, { n: 130, a, sk, spread: 0.035, life: 1.0 });
       });
     }
-
-    // routes: a comet travels origin → Jakarta; afterwards a faint gradient base line with travelling pulses
-    const originVis = seg(p, 0.62, 0.7);
     routes.forEach((r, i) => {
+      const path = routeAt(r), far = r.o.far;
+      // drawing: the comet flies origin → Jakarta as you scroll
       const t = easeOut(seg(p, 0.66 + r.delay, 0.86 + r.delay));
-      const pts = r.pts.map((v) => proj(spinToWorld(v)));
-      const far = r.o.far;
-      if (t > 0) {
-        const n = Math.max(2, Math.round(t * (pts.length - 1)) + 1);
-        const drawn = pts.slice(0, n);
-        // base line: always fades in from the origin, never a solid band
-        comet(drawn, {
-          a0: far ? 0 : 0.18, a1: far ? 0.6 : 1, w0: 0.9, w1: (far ? 1.2 : 1.9) * sk,
-          gamma: 0.8, halo: 0, dash: far ? [3] : null,
-        });
-        if (t < 1) {
-          const tailN = Math.min(n, 34);
-          comet(drawn.slice(n - tailN), { a0: 0, a1: 1, w0: 0.3, w1: 2.2 * sk, gamma: 1.3, halo: 0.6 });
-          const h = drawn[n - 1];
-          glow(h.x, h.y, 10 * sk, 'rgba(229,78,38,0.4)', h.v);
-          dot(h.x, h.y, 2.8 * sk, ORANGE, null, 0, h.v);
-        }
-      }
-      // resting pulses: one short comet per route, looping origin → Jakarta
+      if (t > 0 && t < 1) comet(30 + i, path, t, 0.34, { n: 150, a: far ? 0.7 : 1, sk, uMin: 0, spread: 0.034, life: 0.8 });
+      // resting: a comet keeps running each route into Jakarta
       if (rest > 0 && !reduceMotion) {
-        const cyc = (clock * (far ? 0.12 : 0.16) + r.phase) % 1;
-        const headI = Math.round(easeOut(cyc) * (pts.length - 1));
-        const tailI = Math.max(0, headI - 30);
-        const s2 = pts.slice(tailI, headI + 1);
-        const fade = rest * Math.min(1, cyc * 8) * Math.min(1, (1 - cyc) * 10) * (far ? 0.6 : 1);
-        if (s2.length > 1) {
-          comet(s2, { a0: 0, a1: fade, w0: 0.3, w1: 2.0 * sk, gamma: 1.3, halo: far ? 0 : 0.5 });
-          const h = s2[s2.length - 1]; dot(h.x, h.y, 2.4 * sk, ORANGE, null, 0, fade * h.v);
-        }
+        const cyc = (clock * (far ? 0.11 : 0.15) + r.phase) % 1;
+        const fade = rest * Math.min(1, cyc * 6) * Math.min(1, (1 - cyc) * 12) * (far ? 0.6 : 1);
+        comet(50 + i, path, easeOut(cyc), 0.26, { n: 100, a: fade, size: 0.85, sk, uMin: 0, spread: 0.022, life: 0.7 });
       }
-      // origin pin
+    });
+    pGeo.setDrawRange(0, pc);
+    for (const k of ['position', 'aSize', 'aAlpha', 'aHeat']) { const at = pGeo.getAttribute(k); at.clearUpdateRanges(); at.addUpdateRange(0, pc * at.itemSize); at.needsUpdate = true; }
+
+    renderer.render(scene, cam);
+
+    // ---------- overlay (vector): ground shadow, faint route lines, pins, labels ----------
+    ctx.clearRect(0, 0, overlay.width, overlay.height);
+    const [gcx, gcy] = toScreen(world.position);
+    const edge = toScreen(tmpO.copy(world.position).add(new Vector3(world.scale.x, 0, 0)));
+    groundShadow(gcx, gcy, Math.abs(edge[0] - gcx), uniforms.uReady.value * 0.9);
+
+    routes.forEach((r) => {
+      const far = r.o.far;
+      const t = easeOut(seg(p, 0.66 + r.delay, 0.86 + r.delay));
+      if (t > 0) {
+        const pts = r.pts.map((v) => proj(spinToWorld(v)));
+        const n = Math.max(2, Math.round(t * (pts.length - 1)) + 1);
+        // the line the comet leaves behind: fades in from the origin, never a solid band
+        line(pts.slice(0, n), { a0: 0, a1: far ? 0.4 : 0.7, w0: 0.6, w1: (far ? 1.0 : 1.4) * sk, dash: far ? 3 : 0 });
+      }
       const o = proj(spinToWorld(r.origin)); r.screen = o;
       if (originVis > 0) dot(o.x, o.y, (far ? 3.2 : 5) * sk, '#fff', ORANGE, far ? 1.5 : 2, originVis * o.v);
     });
@@ -510,7 +569,7 @@ export function createGlobe({ canvas, overlay, labels, reduceMotion = false, bas
     renderOnce() { frame(performance.now()); },
     destroy() {
       stop(); window.removeEventListener('resize', resize);
-      geo.dispose(); mat.dispose(); tex.dispose(); renderer.dispose();
+      geo.dispose(); mat.dispose(); tex.dispose(); pGeo.dispose(); pMat.dispose(); renderer.dispose();
       [jLabel, ...oLabels.map((l) => l.el)].forEach((el) => el.remove());
     },
   };
