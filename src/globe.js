@@ -401,11 +401,10 @@ export function createGlobe({ canvas, overlay, labels, reduceMotion = false, bas
   }
   resize();
 
-  // Resting orientation: Jakarta left of centre, Japan up-right, Australia down-right.
+  // Start orientation (and the reduced-motion view): Asia-Pacific facing the viewer.
   const FACE_LON = 128, FACE_LAT = -9;
   const fv = ll(FACE_LAT, FACE_LON, 1);
   const faceY = Math.atan2(-fv.x, fv.z);
-  const faceX = (FACE_LAT * Math.PI) / 180;
 
   // ---- projection helpers
   const tmp = new Vector3(), tmpO = new Vector3();
@@ -447,7 +446,9 @@ export function createGlobe({ canvas, overlay, labels, reduceMotion = false, bas
 
   // ---- state
   let progress = reduceMotion ? 1 : 0, pSm = progress;
-  let spinA = faceY - 0.4, last = performance.now(), running = false, raf = 0, clock = 0;
+  const SPIN_SPEED = 0.16; // rad/s, about 40 s per turn
+  const TILT = 0.12;        // slight lean so the northern coasts read
+  let spinA = faceY - 0.6, last = performance.now(), running = false, raf = 0, clock = 0;
   const NARROW = 760;
   const invSpin = new Matrix4();
 
@@ -467,15 +468,13 @@ export function createGlobe({ canvas, overlay, labels, reduceMotion = false, bas
     world.scale.setScalar(k1.s + (k3.s - k1.s) * m);
 
     // rotation: free spin (K1) → face Asia-Pacific (K2) → gentle idle sway (K3)
-    if (!reduceMotion) spinA += dt * 0.26;
-    const rest = seg(p, 0.9, 1);
-    const sway = reduceMotion ? 0 : Math.sin(clock * 0.3) * 0.18 * rest;
-    const target = faceY + sway;
-    const off = ((((spinA - target) % (Math.PI * 2)) + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+    // rotation runs on its own clock and never reads scroll (scroll only moves and scales the globe).
+    // Reduced motion: no spin, parked facing Jakarta.
+    if (!reduceMotion) spinA += dt * SPIN_SPEED;
     spin.rotation.order = 'XYZ';
-    spin.rotation.y = target + off * (1 - m);
-    spin.rotation.x = faceX * m + 0.3 * (1 - m);
-    spin.rotation.z = -0.06 * (1 - m);
+    spin.rotation.y = reduceMotion ? faceY : spinA;
+    spin.rotation.x = TILT;
+    spin.rotation.z = 0;
     scene.updateMatrixWorld(true);
     // key light in globe object space (rotation only)
     invSpin.copy(globe.matrixWorld).invert();
