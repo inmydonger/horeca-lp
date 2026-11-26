@@ -106,6 +106,10 @@ if (!reduce) {
   } catch (err) {
     console.warn('[globe] not available', err);
   }
+  if (globe?.ready) {
+    canvas.style.opacity = 0;
+    globe.ready.then(() => gsap.to(canvas, { opacity: 1, duration: reduce ? 0 : 0.8, ease: 'power2.out' }));
+  }
   const copy = $('#originCopy');
   const setCopy = (p) => {
     const t = gsap.utils.clamp(0, 1, (p - 0.3) / 0.25);
@@ -168,38 +172,44 @@ ScrollTrigger.create({
 window.addEventListener('resize', () => { const i = coldIdx; coldIdx = -1; setCold(i); });
 
 /* ---------------- ordering stage ---------------- */
+// Real screens: the seller sees live products, the kitchen taps "Place Order" in the app,
+// the order lands at the top of the seller's order list and the kitchen gets notifications.
+const press = (el, t = 160) => { el.classList.add('is-press'); setTimeout(() => el.classList.toggle('is-press', false), t); };
+const show = (el, on) => el && el.classList.toggle('is-on', on);
 if (!reduce) {
   const st = $('#orderStage');
   const phone = $('#orderPhone');
   const btn = $('#placeOrder');
-  const newRow = $('#orderRows .ui-row--new');
+  const shotP = $('#shotProducts'), shotO = $('#shotOrders');
+  const newRow = $('#newRow');
   const toasts = $$('.toast', st);
   gsap.from($('.browser', st), { y: 60, opacity: 0, duration: 1.2, ease: 'expo.out', scrollTrigger: { trigger: st, start: 'top 85%' } });
   gsap.from(phone, { y: 100, opacity: 0, duration: 1.3, ease: 'expo.out', delay: 0.12, scrollTrigger: { trigger: st, start: 'top 85%' } });
   gsap.to(phone, { yPercent: -8, ease: 'none', scrollTrigger: { trigger: st, start: 'top bottom', end: 'bottom top', scrub: true } });
 
-  const loop = gsap.timeline({ paused: true, repeat: -1, repeatDelay: 1.6, defaults: { ease: 'expo.out' } });
+  const loop = gsap.timeline({ paused: true, repeat: -1, repeatDelay: 1.2, defaults: { ease: 'expo.out' } });
   loop.set(toasts, { opacity: 0, y: 16, scale: 0.97 })
-    .set(newRow, { opacity: 0, backgroundColor: '#fff6f2' })
-    .to(btn, { scale: 0.94, duration: 0.12, ease: 'power2.out' }, 0.6)
-    .to(btn, { scale: 1, duration: 0.4 }, 0.72)
-    .to(newRow, { opacity: 1, duration: 0.6 }, 1.0)
-    .from(newRow, { x: -12, duration: 0.8 }, 1.0)
-    .to(toasts[1], { opacity: 1, y: 0, scale: 1, duration: 0.7 }, 1.6)
-    .to(toasts[0], { opacity: 1, y: 0, scale: 1, duration: 0.7 }, 2.6)
-    .to(newRow, { backgroundColor: '#ffffff', duration: 1.2, ease: 'power1.out' }, 3.4)
-    .to(toasts, { opacity: 0, y: -8, duration: 0.5, stagger: 0.08, ease: 'power2.in' }, 6.2)
-    .to({}, { duration: 0.2 });
+    .set(newRow, { opacity: 0 })
+    .call(() => { show(shotP, true); show(shotO, false); }, null, 0)
+    .call(() => press(btn, 220), null, 1.2)
+    .call(() => { show(shotO, true); show(shotP, false); }, null, 1.6)
+    .to(newRow, { opacity: 1, duration: 0.5 }, 2.1)
+    .to(toasts[1], { opacity: 1, y: 0, scale: 1, duration: 0.7 }, 2.4)
+    .to(toasts[0], { opacity: 1, y: 0, scale: 1, duration: 0.7 }, 3.4)
+    .to(newRow, { opacity: 0, duration: 1.2, ease: 'power1.out' }, 4.6)
+    .to(toasts, { opacity: 0, y: -8, duration: 0.5, stagger: 0.08, ease: 'power2.in' }, 6.6)
+    .to({}, { duration: 0.3 });
   ScrollTrigger.create({ trigger: st, start: 'top 75%', end: 'bottom top', onToggle: (s) => (s.isActive ? loop.play() : loop.pause()) });
 }
 
 /* ---------------- paperwork stage ---------------- */
+// Seller clicks "PDF Invoice"; the invoice opens in the kitchen's app, where they download the PDF.
 if (!reduce) {
   const st = $('#paperStage');
   const browser = $('.browser', st);
   const cursor = $('#paperCursor');
   const pdf = $('#pdfBtn');
-  const inv = $('#invPaper');
+  const inv = $('#shotAppInvoice');
   const dl = $('#dlBtn');
   gsap.from($$('.device', st), { y: 60, opacity: 0, duration: 1.2, ease: 'expo.out', stagger: 0.12, scrollTrigger: { trigger: st, start: 'top 85%' } });
   let loop;
@@ -210,16 +220,14 @@ if (!reduce) {
     const tx = p.left - b.left + p.width * 0.55, ty = p.top - b.top + p.height * 0.45;
     loop = gsap.timeline({ paused: true, repeat: -1, repeatDelay: 1.2 });
     loop.set(cursor, { x: b.width * 0.45, y: b.height * 0.75, opacity: 0 })
-      .set(inv, { opacity: 0, scaleY: 0.6, y: -10 })
+      .call(() => show(inv, false), null, 0)
       .to(cursor, { opacity: 1, duration: 0.3 }, 0.2)
       .to(cursor, { x: tx, y: ty, duration: 1.1, ease: 'power3.inOut' }, 0.3)
-      .call(() => pdf.classList.add('is-press'), null, 1.45)
-      .call(() => pdf.classList.remove('is-press'), null, 1.6)
-      .to(cursor, { opacity: 0, duration: 0.4 }, 2.2)
-      .to(inv, { opacity: 1, scaleY: 1, y: 0, duration: 0.8, ease: 'expo.out' }, 1.8)
-      .call(() => dl.classList.add('is-press'), null, 3.2)
-      .call(() => dl.classList.remove('is-press'), null, 3.38)
-      .to({}, { duration: 1.6 });
+      .call(() => press(pdf, 180), null, 1.45)
+      .to(cursor, { opacity: 0, duration: 0.4 }, 2.1)
+      .call(() => show(inv, true), null, 1.9)
+      .call(() => press(dl, 200), null, 3.5)
+      .to({}, { duration: 2.2 });
     if (wasActive) loop.play();
   };
   build();
@@ -232,6 +240,8 @@ if (!reduce) {
     start: 'top 90%', once: true,
     onEnter: (els) => gsap.fromTo(els, { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 1, ease: 'expo.out', stagger: 0.08 }),
   });
+} else {
+  show($('#shotAppInvoice'), true);
 }
 
 /* ---------------- proof pyramid ---------------- */

@@ -151,37 +151,22 @@
         </div>
         <div class="stagebox">
           <div class="stage stage--ordering" id="orderStage" aria-hidden="true">
-            <div class="device browser" style="--x:220;--y:0;--w:980;--h:738">
+            <div class="device browser" style="--x:220;--y:0;--w:980;--h:736">
               <div class="browser__chrome"><i></i><i></i><i></i><span>thehoreca.id</span></div>
-              <!-- Screen slot: Seller · Order - List (Horeca Design Dashboard 2:866). Replace with the real screen when it is pasted into Figma. -->
-              <div class="screen screen--seller">
-                <div class="ui-side"><b class="ui-logo"><span>the</span>HORECA</b><i></i><i class="on"></i><i></i><i></i><i></i></div>
-                <div class="ui-main">
-                  <div class="ui-title">Orders</div>
-                  <div class="ui-tabs"><span class="on">All</span><span>New</span><span>Processing</span><span>Shipped</span><span>Delivered</span></div>
-                  <div class="ui-table" id="orderRows">
-                    <div class="ui-row ui-row--head"><span>Order</span><span>Customer</span><span>Items</span><span>Status</span></div>
-                    <div class="ui-row ui-row--new"><span class="sk w60"></span><span class="sk w80"></span><span>Wagyu ribeye, 5 kg</span><span class="pill pill--orange">New</span></div>
-                    <div class="ui-row"><span class="sk w60"></span><span class="sk w70"></span><span>Short ribs, 8 kg</span><span class="pill pill--blue">Processing</span></div>
-                    <div class="ui-row"><span class="sk w60"></span><span class="sk w90"></span><span>Tenderloin, 4 kg</span><span class="pill pill--blue">Processing</span></div>
-                    <div class="ui-row"><span class="sk w60"></span><span class="sk w60"></span><span>Brisket, 10 kg</span><span class="pill pill--green">Shipped</span></div>
-                    <div class="ui-row"><span class="sk w60"></span><span class="sk w80"></span><span>Rendang beef, 20 kg</span><span class="pill pill--green">Delivered</span></div>
-                    <div class="ui-row"><span class="sk w60"></span><span class="sk w70"></span><span>T-bone, 6 kg</span><span class="pill pill--green">Delivered</span></div>
-                  </div>
-                </div>
+              <!-- Real seller dashboard screens (Horeca Design Dashboard: Products 3:2731, Order - List 2:866) -->
+              <div class="screen">
+                <img class="shot is-on" id="shotProducts" src="img/screens/seller-products.webp" alt="" width="1440" height="1024" loading="lazy" />
+                <img class="shot" id="shotOrders" src="img/screens/seller-orders.webp" alt="" width="1440" height="1024" loading="lazy" />
+                <i class="hl" id="newRow" style="--l:19.5;--t:21.2;--w:78.8;--h:5.3"></i>
               </div>
             </div>
-            <div class="device phone" id="orderPhone" style="--x:0;--y:150;--w:300;--h:618">
-              <!-- Screen slot: Customer · Cart (RME-Horeca 3:1093) -->
-              <div class="phone__screen screen--cart">
-                <div class="ui-title sm">Cart</div>
-                <div class="cart-item"><img src="img/wagyu-ribeye.webp" alt="" loading="lazy" /><div><b>Wagyu ribeye</b><span class="sk w60"></span></div><span class="qty">5 kg</span></div>
-                <div class="cart-item"><img src="img/short-ribs.webp" alt="" loading="lazy" /><div><b>Short ribs</b><span class="sk w50"></span></div><span class="qty">8 kg</span></div>
-                <div class="cart-item"><img src="img/tenderloin.webp" alt="" loading="lazy" /><div><b>Tenderloin</b><span class="sk w70"></span></div><span class="qty">4 kg</span></div>
-                <div class="cart-total"><span>Total</span><span class="sk w40"></span></div>
-                <span class="cart-btn" id="placeOrder">Place order</span>
+            <div class="device phone" id="orderPhone" style="--x:0;--y:150;--w:300;--h:617">
+              <div class="phone__screen">
+                <!-- Customer app · Cart (RME-Horeca 3:1093), "Powered by" line removed -->
+                <img class="shot is-on" src="img/screens/app-cart.webp" alt="" width="387" height="852" loading="lazy" />
+                <i class="tap" id="placeOrder" style="--l:4.1;--t:80.3;--w:91.7;--h:4.2"></i>
               </div>
-              <i class="phone__island"></i>
+              <img class="phone__frame" src="img/screens/iphone-17-air.webp" alt="" width="465" height="956" />
             </div>
             <div class="toast" style="--x:840;--y:560;--w:400" data-status="orange"><i></i><div><b data-i18n="toast.t1">Out for delivery</b><p data-i18n="toast.b1">Wagyu ribeye, 5 kg is on its way to your kitchen.</p></div><time data-i18n="toast.now">now</time></div>
             <div class="toast" style="--x:840;--y:652;--w:388" data-status="blue"><i></i><div><b data-i18n="toast.t2">Order confirmed</b><p data-i18n="toast.b2">Our team confirmed your order for tomorrow morning.</p></div><time data-i18n="toast.2h">2h</time></div>
@@ -199,27 +184,23 @@
         </div>
         <div class="stagebox">
           <div class="stage stage--paper" id="paperStage" aria-hidden="true">
-            <div class="device browser" style="--x:0;--y:0;--w:880;--h:666">
+            <div class="device browser" style="--x:0;--y:0;--w:880;--h:664">
               <div class="browser__chrome"><i></i><i></i><i></i><span>thehoreca.id</span></div>
-              <!-- Screen slot: Seller · Detail Order, PDF Invoice (Horeca Design Dashboard 163:210) -->
-              <div class="screen screen--detail">
-                <div class="ui-side"><b class="ui-logo"><span>the</span>HORECA</b><i></i><i class="on"></i><i></i><i></i></div>
-                <div class="ui-main">
-                  <div class="ui-detail-head"><div><div class="ui-title">Order detail</div><span class="sk w50"></span></div><span class="ui-btn" id="pdfBtn">PDF Invoice</span></div>
-                  <div class="ui-card"><div class="ui-kv"><span>Status</span><span class="pill pill--green">Shipped</span></div><div class="ui-kv"><span>Customer</span><span class="sk w70"></span></div><div class="ui-kv"><span>Delivery</span><span class="sk w60"></span></div></div>
-                  <div class="ui-card"><div class="ui-row"><span>Wagyu ribeye</span><span>5 kg</span><span class="sk w60"></span></div><div class="ui-row"><span>Short ribs</span><span>8 kg</span><span class="sk w60"></span></div><div class="ui-row"><span>Tenderloin</span><span>4 kg</span><span class="sk w60"></span></div><div class="ui-row ui-row--total"><span>Total</span><span></span><span class="sk w70"></span></div></div>
-                </div>
+              <!-- Real seller screen: Detail Order, Shipped and Unpaid, with PDF Invoice (163:210). Customer name and address replaced. -->
+              <div class="screen">
+                <img class="shot is-on" src="img/screens/seller-order-detail.webp" alt="" width="1440" height="1024" loading="lazy" />
+                <i class="tap tap--sq" id="pdfBtn" style="--l:61.5;--t:18.9;--w:8.9;--h:3.5"></i>
               </div>
               <svg class="cursor" id="paperCursor" width="26" height="26" viewBox="0 0 26 26"><path d="M5.417 3.25 20.584 11.917 14.084 13.542 10.834 20.583Z" fill="#1A1814" stroke="#fff" stroke-width="1.625" stroke-linejoin="round"/></svg>
             </div>
-            <div class="device phone" style="--x:900;--y:40;--w:300;--h:618">
-              <!-- Screen slot: Customer · Invoice Detail (RME-Horeca 3:1578) -->
-              <div class="phone__screen screen--invoice">
-                <div class="ui-title sm">Invoice</div>
-                <div class="inv-paper" id="invPaper"><b>INV-······</b><span class="sk w80"></span><span class="sk w60"></span><span class="sk w90"></span><span class="sk w50"></span><div class="inv-total"><span>Total</span><span class="sk w40"></span></div></div>
-                <span class="cart-btn" id="dlBtn">Download PDF</span>
+            <div class="device phone" id="paperPhone" style="--x:900;--y:40;--w:300;--h:617">
+              <div class="phone__screen">
+                <!-- Customer app · Orders and Invoices (3:1480) then Invoice detail (3:1578) -->
+                <img class="shot is-on" id="shotAppOrders" src="img/screens/app-orders.webp" alt="" width="402" height="874" loading="lazy" />
+                <img class="shot shot--slide" id="shotAppInvoice" src="img/screens/app-invoice.webp" alt="" width="402" height="874" loading="lazy" />
+                <i class="tap" id="dlBtn" style="--l:6;--t:78.6;--w:88;--h:4"></i>
               </div>
-              <i class="phone__island"></i>
+              <img class="phone__frame" src="img/screens/iphone-17-air.webp" alt="" width="465" height="956" />
             </div>
           </div>
         </div>
@@ -227,7 +208,7 @@
         <ul class="bento" role="list">
           <li class="bc bc--wide">
             <div class="bc__visual">
-              <div class="mini-browser"><div class="browser__chrome"><i></i><i></i><i></i><span>thehoreca.id</span></div><div class="mini-screen"><span class="sk w40"></span><span class="sk w70"></span><span class="sk w60"></span><span class="sk w80"></span><span class="ui-btn">PDF Invoice</span></div></div>
+              <div class="mini-browser"><div class="browser__chrome"><i></i><i></i><i></i><span>thehoreca.id</span></div><img src="img/screens/seller-order-detail-crop.webp" alt="" width="1184" height="696" loading="lazy" /></div>
             </div>
             <div class="bc__text"><h3 data-i18n="bento.1t">Generated from your order</h3><p data-i18n="bento.1d">Our team issues the invoice straight from your order, with no retyping.</p></div>
           </li>
@@ -240,7 +221,7 @@
           </li>
           <li class="bc">
             <div class="bc__visual">
-              <div class="mini-phone"><div class="mini-phone__screen"><span class="sk w50"></span><div class="mini-inv"><b>INV-······</b><span class="sk w80"></span><span class="sk w60"></span></div><span class="sk w70"></span></div><i></i></div>
+              <div class="mini-phone"><div class="mini-phone__screen"><img src="img/screens/app-orders.webp" alt="" width="402" height="874" loading="lazy" /></div><img class="phone__frame" src="img/screens/iphone-17-air.webp" alt="" width="465" height="956" loading="lazy" /></div>
             </div>
             <div class="bc__text"><h3 data-i18n="bento.3t">Shows up in your app</h3><p data-i18n="bento.3d">The invoice appears under your orders as soon as it is issued.</p></div>
           </li>

@@ -1,33 +1,77 @@
 <!doctype html>
 <meta charset="utf-8">
-<title>Bake clay globe textures</title>
+<title>Bake clay globe land texture</title>
 <!--
-  Offline baker for the clay globe textures (run with tools/bake-globe.mjs).
+  Offline baker for the clay globe (run with tools/bake-globe.mjs).
   Land shapes: world.svg, Map created by Simplemaps.com (MIT License,
   Copyright (c) 2020 Pareto Softare, LLC DBA Simplemaps.com).
-  The SVG is in Robinson projection; it is reprojected to equirectangular here.
+
+  Output: one RGBA PNG, equirectangular, W x W/2 (default 4096 x 2048).
+    R = signed distance to the coastline, in texels (positive on land),
+        stored as 0.5 + sd / (2 * RANGE). The shader turns this into a
+        pixel-sharp coastline at any zoom, the rounded clay shoulder, the
+        contact crease and the cast shadow.
+    G = tone mask (1 = terracotta countries, 0 = sand). Crisp, anti-aliased.
+    B = 0, A = 255.
+
+  The SVG is in Robinson projection; it is reprojected to equirectangular
+  here. Distances are measured on the sphere (east-west texels shrink with
+  cos(latitude)), so bevels and shadows have the same width everywhere.
 -->
 <body>
 <script>
-window.bake = async function (svgText, W = 4096) {
-  const H = W / 2;
+window.bake = async function (svgText, opt = {}) {
+  const W = opt.size || 4096, H = W / 2;
+  const RANGE = opt.range || 24;           // distance range in output texels
+  const UP = 2;                            // EDT is computed at 2x and averaged down
+  const W2 = W * UP, H2 = H * UP;
+  const S = opt.raster || 5;               // SVG raster scale (2000 x 857 viewBox)
+  const TONE = new Set(opt.tone || ['AU', 'Australia', 'JP', 'Japan', 'NZ', 'New Zealand', 'US', 'United States', 'BR', 'Brazil']);
+  const t0 = performance.now(), log = (m) => console.log(((performance.now() - t0) / 1000).toFixed(1) + 's ' + m);
+
   // Robinson calibration fitted to the supplied SVG (rms < 3px)
   const RXT=[1,.9986,.9954,.99,.9822,.973,.96,.9427,.9216,.8962,.8679,.835,.7986,.7597,.7186,.6732,.6213,.5722,.5322];
   const RYT=[0,.062,.124,.186,.248,.31,.372,.434,.4958,.5571,.6176,.6769,.7346,.7903,.8435,.8936,.9394,.9761,1];
   const tab=(t,a)=>{t=Math.min(90,Math.abs(t));const i=Math.min(17,Math.floor(t/5)),f=(t-i*5)/5;return a[i]+(a[i+1]-a[i])*f;};
   const CAL={x0:985.78,kx:5.6631,y0:501.59,ky:516.54};
 
-  // rasterise SVG land at high resolution
-  const S=4, SW=2000*S, SH=857*S;
-  let svg=svgText.replace(/fill="#ececec"/,'fill="#ffffff"').replace(/stroke="black"/,'stroke="#ffffff"')
-    .replace(/width="2000"/,'width="'+SW+'"').replace(/height="857"/,'height="'+SH+'"');
-  const img=new Image();
-  await new Promise((res,rej)=>{img.onload=res;img.onerror=rej;img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);});
-  const sc=document.createElement('canvas');sc.width=SW;sc.height=SH;const sx=sc.getContext('2d');
-  sx.fillStyle='#000';sx.fillRect(0,0,SW,SH);sx.drawImage(img,0,0,SW,SH);
-  const src=sx.getImageData(0,0,SW,SH).data;
+  // ---------- rasterise ----------
+  const doc = new DOMParser().parseFromString(svgText, 'image/svg+xml');
+  doc.querySelectorAll('metadata,circle').forEach((n) => n.remove());
+  async function raster(scale, toneOnly) {
+    const r = doc.documentElement.cloneNode(true);
+    r.setAttribute('width', 2000 * scale); r.setAttribute('height', 857 * scale);
+    r.setAttribute('fill', '#fff');
+    r.setAttribute('stroke', '#fff');
+    // the tone layer is dilated a little so it always reaches past the coastline (the shader cuts the coast)
+    if (toneOnly) r.setAttribute('stroke-width', '1.6');
+    if (toneOnly) r.querySelectorAll('path').forEach((p) => {
+      const keys = [p.id, p.getAttribute('class'), p.getAttribute('name')];
+      if (!keys.some((k) => k && TONE.has(k))) p.remove();
+    });
+    const s = new XMLSerializer().serializeToString(r);
+    const img = new Image();
+    await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(s); });
+    const cw = 2000 * scale, ch = Math.round(857 * scale);
+    const c = document.createElement('canvas'); c.width = cw; c.height = ch;
+    const x = c.getContext('2d', { willReadFrequently: true });
+    x.fillStyle = '#000'; x.fillRect(0, 0, cw, ch); x.drawImage(img, 0, 0, cw, ch);
+    const d = x.getImageData(0, 0, cw, ch).data, out = new Uint8Array(cw * ch);
+    for (let i = 0; i < out.length; i++) out[i] = d[i * 4];
+    return { a: out, w: cw, h: ch, s: scale };
+  }
+  // bilinear sample of a raster at a lat/lon (0..1)
+  function sampler(R) {
+    return (lat, lon) => {
+      const rx = tab(lat, RXT), ry = Math.sign(lat) * tab(lat, RYT);
+      const Y = (CAL.y0 - CAL.ky * ry) * R.s - 0.5, X = (CAL.x0 + CAL.kx * lon * rx) * R.s - 0.5;
+      if (Y < 0 || Y > R.h - 1 || X < 0 || X > R.w - 1) return 0;
+      const x0 = Math.min(R.w - 2, X | 0), y0 = Math.min(R.h - 2, Y | 0), fx = X - x0, fy = Y - y0, a = R.a, w = R.w;
+      return ((a[y0 * w + x0] * (1 - fx) + a[y0 * w + x0 + 1] * fx) * (1 - fy) + (a[(y0 + 1) * w + x0] * (1 - fx) + a[(y0 + 1) * w + x0 + 1] * fx) * fy) / 255;
+    };
+  }
 
-  // value noise
+  // value noise (for the stylised Antarctic edge)
   const hash=(x,y,z)=>{let h=Math.sin(x*127.1+y*311.7+z*74.7)*43758.5453;return h-Math.floor(h);};
   function vnoise(x,y,z){const xi=Math.floor(x),yi=Math.floor(y),zi=Math.floor(z);let xf=x-xi,yf=y-yi,zf=z-zi;
     xf=xf*xf*(3-2*xf);yf=yf*yf*(3-2*yf);zf=zf*zf*(3-2*zf);const L=(a,b,t)=>a+(b-a)*t;
@@ -35,66 +79,111 @@ window.bake = async function (svgText, W = 4096) {
              L(L(hash(xi,yi,zi+1),hash(xi+1,yi,zi+1),xf),L(hash(xi,yi+1,zi+1),hash(xi+1,yi+1,zi+1),xf),yf),zf);}
   const fbm=(x,y,z,o)=>{let a=.5,f=1,s=0;for(let i=0;i<o;i++){s+=a*vnoise(x*f,y*f,z*f);a*=.5;f*=2.03;}return s;};
 
-  const N=W*H, mask=new Float32Array(N), nLow=new Float32Array(N), nFine=new Float32Array(N);
-  for(let j=0;j<H;j++){const lat=90-(j+.5)/H*180,rx=tab(lat,RXT),ry=Math.sign(lat)*tab(lat,RYT);
-    const syy=(CAL.y0-CAL.ky*ry)*S,cl=Math.cos(lat*Math.PI/180),sl=Math.sin(lat*Math.PI/180);
-    for(let i=0;i<W;i++){const lon=-180+(i+.5)/W*360,k=j*W+i;
-      const px=cl*Math.cos(lon*Math.PI/180),pz=cl*Math.sin(lon*Math.PI/180),py=sl;
-      nLow[k]=fbm(px*2.2+5,py*2.2+5,pz*2.2+5,3);
-      nFine[k]=fbm(px*90,py*90,pz*90,2);
-      let v=0;
-      if(syy>=0&&syy<SH){const sxx=(CAL.x0+CAL.kx*lon*rx)*S;if(sxx>=0&&sxx<SW){
-        // bilinear sample of the high-res raster: crisp but anti-aliased coastline
-        const X=Math.min(SW-2,Math.max(0,sxx)),Y=Math.min(SH-2,Math.max(0,syy)),x0=X|0,y0=Y|0,fx=X-x0,fy=Y-y0;
-        const g=(x,y)=>src[(y*SW+x)*4]/255;
-        v=g(x0,y0)*(1-fx)*(1-fy)+g(x0+1,y0)*fx*(1-fy)+g(x0,y0+1)*(1-fx)*fy+g(x0+1,y0+1)*fx*fy;}}
-      if(lat<-69+nLow[k]*4)v=1; // stylised Antarctic cap (not in the SVG)
-      mask[k]=v;}}
+  // ---------- land mask at 2x ----------
+  const landR = await raster(S, false); log('land raster ' + landR.w + 'x' + landR.h);
+  const landS = sampler(landR);
+  const land = new Uint8Array(W2 * H2);
+  for (let j = 0; j < H2; j++) {
+    const lat = 90 - (j + 0.5) / H2 * 180;
+    for (let i = 0; i < W2; i++) {
+      const lon = -180 + (i + 0.5) / W2 * 360;
+      let v = landS(lat, lon) >= 0.5 ? 1 : 0;
+      if (lat < -60) { // Antarctica is not in the SVG: a stylised ice cap with a hand-cut edge
+        const cl = Math.cos(lat * Math.PI / 180), L = lon * Math.PI / 180;
+        const n = fbm(cl * Math.cos(L) * 3 + 5, Math.sin(lat * Math.PI / 180) * 3 + 5, cl * Math.sin(L) * 3 + 5, 4);
+        if (lat < -70 + (n - 0.5) * 9) v = 1;
+      }
+      land[j * W2 + i] = v;
+    }
+  }
+  landR.a = null; log('reprojected');
 
-  function blur(a,r,pass){const b=new Float32Array(a.length);for(let p=0;p<pass;p++){
-    for(let j=0;j<H;j++){let s=0;for(let i=-r;i<=r;i++)s+=a[j*W+((i+W)%W)];for(let i=0;i<W;i++){b[j*W+i]=s/(2*r+1);s+=a[j*W+((i+r+1)%W)]-a[j*W+((i-r+W)%W)];}}
-    for(let i=0;i<W;i++){let s=0;for(let j=-r;j<=r;j++)s+=b[Math.min(H-1,Math.max(0,j))*W+i];for(let j=0;j<H;j++){a[j*W+i]=s/(2*r+1);s+=b[Math.min(H-1,j+r+1)*W+i]-b[Math.max(0,j-r)*W+i];}}}
-    return a;}
-  const ss=(e0,e1,x)=>{x=Math.min(1,Math.max(0,(x-e0)/(e1-e0)));return x*x*(3-2*x);};
+  // ---------- spherical EDT (Felzenszwalb), east-west texels scaled by cos(lat) ----------
+  const INF = 1e20;
+  function edt1d(f, n, d, v, z) {
+    let k = 0; v[0] = 0; z[0] = -INF; z[1] = INF;
+    for (let q = 1; q < n; q++) {
+      let s = ((f[q] + q * q) - (f[v[k]] + v[k] * v[k])) / (2 * q - 2 * v[k]);
+      while (s <= z[k]) { k--; s = ((f[q] + q * q) - (f[v[k]] + v[k] * v[k])) / (2 * q - 2 * v[k]); }
+      k++; v[k] = q; z[k] = s; z[k + 1] = INF;
+    }
+    k = 0;
+    for (let q = 0; q < n; q++) { while (z[k + 1] < q) k++; const dq = q - v[k]; d[q] = dq * dq + f[v[k]]; }
+  }
+  // squared distance (in 2x texels, measured on the sphere) from every cell to the nearest cell where mask == target
+  function edt(target) {
+    const out = new Float32Array(W2 * H2);
+    const n = W2 * 3, f = new Float64Array(n), d = new Float64Array(n), v = new Int32Array(n), z = new Float64Array(n + 1);
+    for (let j = 0; j < H2; j++) {
+      const lat = 90 - (j + 0.5) / H2 * 180, c = Math.max(1e-3, Math.cos(lat * Math.PI / 180)), c2 = c * c;
+      let any = false;
+      for (let i = 0; i < W2; i++) { const isT = land[j * W2 + i] === target; if (isT) any = true; const val = isT ? 0 : INF; f[i] = val; f[i + W2] = val; f[i + 2 * W2] = val; }
+      if (!any) { for (let i = 0; i < W2; i++) out[j * W2 + i] = INF; continue; }
+      edt1d(f, n, d, v, z);
+      for (let i = 0; i < W2; i++) out[j * W2 + i] = d[i + W2] * c2;
+    }
+    const fc = new Float64Array(H2), dc = new Float64Array(H2), vc = new Int32Array(H2), zc = new Float64Array(H2 + 1);
+    for (let i = 0; i < W2; i++) {
+      for (let j = 0; j < H2; j++) fc[j] = Math.min(INF, out[j * W2 + i]);
+      edt1d(fc, H2, dc, vc, zc);
+      for (let j = 0; j < H2; j++) out[j * W2 + i] = dc[j];
+    }
+    return out;
+  }
+  // Drop specks: islands too small to hold a clay shoulder (thinner than ~MIN_R output texels)
+  // would only show up as dark dots of crease without any land.
+  {
+    const MIN_R = (opt.minIsland ?? 1.3) * UP;
+    const d0 = edt(0), lab = new Int32Array(W2 * H2), stack = new Int32Array(W2 * H2);
+    let next = 1, dropped = 0;
+    for (let s0 = 0; s0 < W2 * H2; s0++) {
+      if (!land[s0] || lab[s0]) continue;
+      let sp = 0, top = 0, peak = 0; const members = [];
+      stack[sp++] = s0; lab[s0] = next;
+      while (sp) {
+        const q = stack[--sp]; members.push(q); peak = Math.max(peak, d0[q]);
+        const j = (q / W2) | 0, i = q - j * W2;
+        const nb = [j * W2 + (i + 1) % W2, j * W2 + (i - 1 + W2) % W2, j > 0 ? q - W2 : -1, j < H2 - 1 ? q + W2 : -1];
+        for (const r of nb) if (r >= 0 && land[r] && !lab[r]) { lab[r] = next; stack[sp++] = r; }
+      }
+      if (Math.sqrt(peak) < MIN_R) { for (const q of members) land[q] = 0; dropped++; }
+      next++;
+    }
+    log('islands: ' + (next - 1) + ', dropped specks: ' + dropped);
+  }
+  const toLand = edt(1); log('edt ocean->land');
+  const toSea = edt(0); log('edt land->ocean');
 
-  // Height: a raised clay slab. A small bevel (≈0.25° wide) rounds the rim
-  // without softening the coastline itself.
-  const k=W/4096;
-  const bevel=blur(mask.slice(),Math.max(1,Math.round(3*k)),2);
-  const shadow=blur(mask.slice(),Math.max(2,Math.round(10*k)),3); // contact shade on the ocean
-  const hgt=new Float32Array(N);
-  for(let q=0;q<N;q++){const lat=90-((q/W|0)+.5)/H*180;
-    const rim=ss(.0,1,bevel[q]);                    // rounded shoulder
-    const top=.82+.28*nLow[q];                       // gentle lumpy plateau
-    hgt[q]=rim*top*(lat<-62?.55:1)+(nFine[q]-.5)*.05*rim;}
+  // ---------- downsample signed distance to output size ----------
+  const sd = new Float32Array(W * H);
+  for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
+    let s = 0;
+    for (let b = 0; b < UP; b++) for (let a = 0; a < UP; a++) {
+      const q = (j * UP + b) * W2 + i * UP + a;
+      s += land[q] ? Math.sqrt(toSea[q]) - 0.5 : -(Math.sqrt(toLand[q]) - 0.5);
+    }
+    sd[j * W + i] = s / (UP * UP) / UP; // → output texels
+  }
+  log('signed distance');
 
-  const NS=26*k; // normal strength (scaled for texel size)
-  const mk=()=>{const c=document.createElement('canvas');c.width=W;c.height=H;return c;};
-  const cc=mk(),nc=mk();const cx=cc.getContext('2d'),nx=nc.getContext('2d');
-  const cd=cx.createImageData(W,H),nd=nx.createImageData(W,H);
-  const ocean=[124,160,196],shelf=[150,184,212],deep=[104,140,180],cream=[243,224,196],peach=[234,160,120],ice=[247,242,233];
-  const mix=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t];
-  for(let j=0;j<H;j++){const lat=90-(j+.5)/H*180,cl=Math.max(.12,Math.cos(lat*Math.PI/180));
-    for(let i=0;i<W;i++){const q=j*W+i;
-      const hl=hgt[j*W+(i-1+W)%W],hr=hgt[j*W+(i+1)%W],hu=hgt[Math.max(0,j-1)*W+i],hb=hgt[Math.min(H-1,j+1)*W+i];
-      // tangent-space normal, OpenGL convention (+Y = up in the image): raised land reads as embossed
-      const dx=(hr-hl)*NS*cl, dy=(hu-hb)*NS; // dy: height gain towards the top of the image
-      const len=Math.hypot(dx,dy,1);
-      nd.data[q*4]=(-dx/len*.5+.5)*255; nd.data[q*4+1]=(-dy/len*.5+.5)*255; nd.data[q*4+2]=(1/len*.5+.5)*255; nd.data[q*4+3]=255;
-      const land=mask[q];
-      let oc=mix(deep,ocean,ss(0,.65,nLow[q]));
-      oc=mix(oc,shelf,ss(.02,.35,shadow[q])*.55);
-      const shade=1-.16*ss(.05,.6,shadow[q])*(1-land); // land casts a soft contact shade onto the sea
-      oc=[oc[0]*shade,oc[1]*shade,oc[2]*shade];
-      const warm=Math.min(1,Math.max(0,(1-Math.abs(lat+8)/42)*.9+(nLow[q]-.5)*1.4));
-      let ld=mix(cream,peach,ss(.25,.75,warm));if(lat<-62)ld=ice;
-      const c=mix(oc,ld,land);const gr=(nFine[q]-.5)*(8+10*land);
-      cd.data[q*4]=c[0]+gr;cd.data[q*4+1]=c[1]+gr;cd.data[q*4+2]=c[2]+gr;cd.data[q*4+3]=255;}}
-  cx.putImageData(cd,0,0);nx.putImageData(nd,0,0);
-  // low-res height for silhouette displacement
-  const hw=1024,hh=512,hc=document.createElement('canvas');hc.width=hw;hc.height=hh;const hx=hc.getContext('2d');const hd=hx.createImageData(hw,hh);
-  for(let j=0;j<hh;j++)for(let i=0;i<hw;i++){const q=(j*H/hh|0)*W+(i*W/hw|0);const g=Math.round(Math.min(1,Math.max(0,hgt[q]))*255);const p=(j*hw+i)*4;hd.data[p]=hd.data[p+1]=hd.data[p+2]=g;hd.data[p+3]=255;}
-  hx.putImageData(hd,0,0);
-  return {color:cc.toDataURL('image/webp',.9),normal:nc.toDataURL('image/webp',.94),height:hc.toDataURL('image/png')};
+  // ---------- tone mask ----------
+  const toneR = await raster(Math.max(1, S / 2), true);
+  const toneS = sampler(toneR);
+  const SS = [[.25, .25], [.75, .25], [.25, .75], [.75, .75]];
+
+  // ---------- encode ----------
+  const c = document.createElement('canvas'); c.width = W; c.height = H;
+  const x = c.getContext('2d'); const id = x.createImageData(W, H), px = id.data;
+  for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
+    const q = j * W + i, p = q * 4;
+    let t = 0;
+    for (const [a, b] of SS) t += toneS(90 - (j + b) / H * 180, -180 + (i + a) / W * 360);
+    px[p] = Math.round(Math.min(1, Math.max(0, 0.5 + sd[q] / (2 * RANGE))) * 255);
+    px[p + 1] = Math.round(t / 4 * 255);
+    px[p + 2] = 0; px[p + 3] = 255;
+  }
+  x.putImageData(id, 0, 0);
+  log('encoded');
+  return { land: c.toDataURL('image/png'), range: RANGE, size: W };
 };
 </script>
