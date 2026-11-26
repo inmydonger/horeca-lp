@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>theHoreca · Imported meat for hotels, restaurants and cafés</title>
+  <meta name="description" content="From signature Wagyu to everyday rendang. Imported, kept frozen and delivered to your kitchen across Jabodetabek, on one account." />
+  <meta name="theme-color" content="#fbf8ee" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&family=Nunito:wght@400;700&display=swap" />
+  <link rel="preload" as="image" href="img/lamb-rack.webp" />
+  <link rel="stylesheet" href="./src/styles.css" />
+</head>
+<body>
+  <a class="skip" href="#main" data-i18n="skip">Skip to content</a>
+
+  <!-- ============ NAV ============ -->
+  <header class="nav" id="nav">
+    <div class="nav__inner">
+      <div class="nav__brand"><a class="logo" href="#top" aria-label="theHoreca home" data-i18n-aria="aria.home"><img src="img/logo.svg" width="130" height="44" alt="" /></a></div>
+      <nav class="nav__links" aria-label="Sections" data-i18n-aria="aria.sections">
+        <a href="#origin" data-i18n="nav.origin">Origin</a>
+        <a href="#range" data-i18n="nav.range">Range</a>
+        <a href="#cold-chain" data-i18n="nav.cold">Cold chain</a>
+        <a href="#ordering" data-i18n="nav.ordering">Ordering</a>
+      </nav>
+      <div class="nav__actions">
+        <div class="lang" role="group" aria-label="Language" data-i18n-aria="aria.lang">
+          <button type="button" data-lang="en" aria-pressed="true">EN</button><span aria-hidden="true"> / </span><button type="button" data-lang="id" aria-pressed="false">ID</button>
+        </div>
+        <a class="nav__login" href="https://thehoreca.id/" data-i18n="nav.login">Log in</a>
+        <a class="btn btn--primary btn--nav" href="#apply" data-i18n="nav.register">Register</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- ============ 01 HERO ============ -->
+    <section class="hero" id="top" aria-labelledby="hero-title">
+      <div class="hero__frame">
+        <div class="hero__copy">
+          <h1 id="hero-title" class="display hero__title"><span class="line" data-i18n="hero.t1">Every cut your</span> <span class="line" data-i18n="hero.t2">kitchen needs.</span></h1>
+          <p class="lead hero__lead" data-i18n="hero.lead">From signature Wagyu to everyday rendang. Imported, kept frozen and delivered to your kitchen across Jabodetabek.</p>
+        </div>
+        <div class="hero__ctas">
+          <a class="btn btn--primary" href="#apply" data-i18n="cta.apply">Apply for an account</a>
+          <a class="btn btn--ghost" href="#range" data-i18n="cta.range">See the range</a>
+        </div>
+        <div class="hero__stage" aria-hidden="true">
+          <div class="hero__visual" id="heroVisual">
+            <!-- positions are Figma "visual" frame coordinates (1299 × 1299).
+                 Outer .hv = layout + parallax; inner .hv__body = drop/squash (src/hero-drop.js).
+                 data-drop names a piece; a shadow's data-for points at its piece. data-o = contact point (% of box).
+                 Shadows are baked from each cut's alpha by tools/bake-hero-shadows.py (soft cast + tight contact). -->
+            <div class="hv sh sh--soft" data-depth=".9" data-for="pepper" style="--x:561.04;--y:266.56;--w:227.92;--h:229.89"><img class="hv__body" src="img/shadow/hero/pepper-soft.webp" alt="" /></div>
+            <div class="hv sh sh--contact" data-depth=".9" data-for="pepper" style="--x:561.04;--y:266.56;--w:227.92;--h:229.89"><img class="hv__body" src="img/shadow/hero/pepper-contact.webp" alt="" /></div>
+            <div class="hv piece pepper" data-depth=".9" data-drop="pepper" data-o="50 77" style="--x:617;--y:323;--w:116;--h:117"><img class="hv__body" src="img/peppercorns.webp" alt="" /></div>
+            <div class="hv sh sh--soft" data-depth=".3" data-for="lamb" style="--x:128.16;--y:46.99;--w:872.16;--h:872.16"><img class="hv__body" src="img/shadow/hero/lamb-soft.webp" alt="" /></div>
+            <div class="hv sh sh--contact" data-depth=".3" data-for="lamb" style="--x:128.16;--y:46.99;--w:872.16;--h:872.16"><img class="hv__body" src="img/shadow/hero/lamb-contact.webp" alt="" /></div>
+            <div class="hv piece" data-depth=".3" data-drop="lamb" data-o="49 88" style="--x:268.91;--y:187.74;--w:590.67;--h:590.67"><img class="hv__body" src="img/lamb-rack.webp" alt="" /></div>
+            <div class="hv sh sh--soft" data-depth=".8" data-for="lemongrass" style="--x:563.11;--y:576.32;--w:562.33;--h:374.85"><img class="hv__body" src="img/shadow/hero/lemongrass-soft.webp" alt="" /></div>
+            <div class="hv sh sh--contact" data-depth=".8" data-for="lemongrass" style="--x:563.11;--y:576.32;--w:562.33;--h:374.85"><img class="hv__body" src="img/shadow/hero/lemongrass-contact.webp" alt="" /></div>
+            <div class="hv piece" data-depth=".8" data-drop="lemongrass" data-o="51 92" style="--x:654.19;--y:636.81;--w:380.17;--h:253.87"><img class="hv__body" src="img/lemongrass.webp" alt="" /></div>
+            <div class="hv sh sh--soft" data-depth=".6" data-for="tbone" style="--x:-72.04;--y:394.09;--w:681.91;--h:681.91"><img class="hv__body" src="img/shadow/hero/tbone-soft.webp" alt="" /></div>
+            <div class="hv sh sh--contact" data-depth=".6" data-for="tbone" style="--x:-72.04;--y:394.09;--w:681.91;--h:681.91"><img class="hv__body" src="img/shadow/hero/tbone-contact.webp" alt="" /></div>
+            <div class="hv piece tbone" data-depth=".6" data-drop="tbone" data-o="50 86" style="--x:38;--y:504.13;--w:461.82;--h:461.82"><div class="hv__body"><img src="img/t-bone.webp" alt="" /><i style="-webkit-mask-image:url(img/t-bone.webp);mask-image:url(img/t-bone.webp)"></i></div></div>
+            <div class="hv sh sh--soft" data-depth=".5" data-for="brisket" style="--x:662.37;--y:158.17;--w:618.96;--h:412.54"><img class="hv__body" src="img/shadow/hero/brisket-soft.webp" alt="" /></div>
+            <div class="hv sh sh--contact" data-depth=".5" data-for="brisket" style="--x:662.37;--y:158.17;--w:618.96;--h:412.54"><img class="hv__body" src="img/shadow/hero/brisket-contact.webp" alt="" /></div>
+            <div class="hv piece" data-depth=".5" data-drop="brisket" data-o="50 92" style="--x:762.62;--y:224.74;--w:418.45;--h:279.39"><img class="hv__body" src="img/brisket.webp" alt="" /></div>
+            <div class="hv sh sh--soft" data-depth="1" data-for="ribs" style="--x:179.70;--y:596.08;--w:695.09;--h:695.09"><img class="hv__body" src="img/shadow/hero/ribs-soft.webp" alt="" /></div>
+            <div class="hv sh sh--contact" data-depth="1" data-for="ribs" style="--x:179.70;--y:596.08;--w:695.09;--h:695.09"><img class="hv__body" src="img/shadow/hero/ribs-contact.webp" alt="" /></div>
+            <div class="hv piece" data-depth="1" data-drop="ribs" data-o="51 85" style="--x:291.87;--y:708.25;--w:470.75;--h:470.75"><img class="hv__body" src="img/short-ribs.webp" alt="" /></div>
+            <div class="hv sh sh--soft" data-depth=".7" data-for="tenderloin" style="--x:642.84;--y:343.33;--w:652.92;--h:435.14"><img class="hv__body" src="img/shadow/hero/tenderloin-soft.webp" alt="" /></div>
+            <div class="hv sh sh--contact" data-depth=".7" data-for="tenderloin" style="--x:642.84;--y:343.33;--w:652.92;--h:435.14"><img class="hv__body" src="img/shadow/hero/tenderloin-contact.webp" alt="" /></div>
+            <div class="hv piece" data-depth=".7" data-drop="tenderloin" data-o="50 91" style="--x:748.59;--y:413.55;--w:441.41;--h:294.7"><img class="hv__body" src="img/tenderloin.webp" alt="" /></div>
+            <div class="hv sh sh--soft" data-depth="1.1" data-for="rosemary" style="--x:913.30;--y:667.56;--w:296.98;--h:296.98"><img class="hv__body" src="img/shadow/hero/rosemary-soft.webp" alt="" /></div>
+            <div class="hv sh sh--contact" data-depth="1.1" data-for="rosemary" style="--x:913.30;--y:667.56;--w:296.98;--h:296.98"><img class="hv__body" src="img/shadow/hero/rosemary-contact.webp" alt="" /></div>
+            <div class="hv piece" data-depth="1.1" data-drop="rosemary" data-o="52 87" style="--x:969.3;--y:723.56;--w:184.98;--h:184.98"><img class="hv__body" src="img/rosemary.webp" alt="" /></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 02 ORIGIN (pinned globe) ============ -->
+    <section class="origin" id="origin" aria-labelledby="origin-title">
+      <div class="origin__track" id="originTrack">
+        <div class="origin__stage">
+          <canvas class="origin__gl" id="globeGl" role="img" aria-label="Clay globe with import routes from around the world landing in Jakarta" data-i18n-aria="origin.aria"></canvas>
+          <canvas class="origin__ov" id="globeOv" aria-hidden="true"></canvas>
+          <div class="origin__labels" id="globeLabels" aria-hidden="true"></div>
+          <div class="origin__copy" id="originCopy">
+            <h2 id="origin-title" class="h2" data-i18n="origin.title">From around the world, through trusted importers.</h2>
+            <p class="lead" data-i18n="origin.lead">We buy from established importers, so cuts from around the world land in Jakarta before they reach your kitchen.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 03 RANGE ============ -->
+    <section class="section range" id="range" aria-labelledby="range-title">
+      <div class="wrap">
+        <div class="head">
+          <h2 id="range-title" class="h1"><span class="line" data-i18n="range.t1">From signature</span> <span class="line" data-i18n="range.t2">to everyday.</span></h2>
+          <p class="lead head__aside" data-i18n="range.lead">One account covers every grade, from Wagyu for your tasting menu to rendang-grade beef for the staff meal.</p>
+        </div>
+        <ul class="cards" role="list">
+          <li><button class="cut" type="button" aria-describedby="cut1">
+            <img class="cut__shadow" src="img/shadow/rs.svg" alt="" />
+            <span class="cut__title" id="cut1"><strong data-i18n="range.c1">Signature</strong><span data-i18n="range.c1s">Wagyu ribeye · tasting menu, fine dining</span></span>
+            <img class="cut__meat" src="img/wagyu-ribeye.webp" alt="Wagyu ribeye" data-i18n-alt="range.a1" loading="lazy" />
+          </button></li>
+          <li><button class="cut" type="button" aria-describedby="cut2">
+            <img class="cut__shadow" src="img/shadow/rs.svg" alt="" />
+            <span class="cut__title" id="cut2"><strong data-i18n="range.c2">Premium</strong><span data-i18n="range.c2s">T-bone and striploin · à la carte, banquet</span></span>
+            <img class="cut__meat" src="img/t-bone.webp" alt="T-bone steak" data-i18n-alt="range.a2" loading="lazy" />
+          </button></li>
+          <li><button class="cut" type="button" aria-describedby="cut3">
+            <img class="cut__shadow" src="img/shadow/rs.svg" alt="" />
+            <span class="cut__title" id="cut3"><strong data-i18n="range.c3">Everyday</strong><span data-i18n="range.c3s">Rendang-grade chuck · staff meal, buffet</span></span>
+            <img class="cut__meat" src="img/rendang-cubes.webp" alt="Rendang-grade beef cubes" data-i18n-alt="range.a3" loading="lazy" />
+          </button></li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============ 04 COLD CHAIN (pinned split) ============ -->
+    <section class="cold" id="cold-chain" aria-labelledby="cold-title">
+      <div class="cold__track" id="coldTrack">
+        <div class="cold__stage">
+          <div class="wrap cold__grid">
+            <div class="cold__copy">
+              <h2 id="cold-title" class="h2"><span class="line" data-i18n="cold.t1">Frozen at origin.</span> <span class="line" data-i18n="cold.t2">Frozen at your door.</span></h2>
+              <p class="lead" data-i18n="cold.lead">One unbroken cold chain, from the importer's freezer to your kitchen. Nothing thaws on the way.</p>
+              <ol class="steps" id="coldSteps">
+                <li class="step is-active"><span class="step__n">01</span><div><h3 data-i18n="cold.s1">Frozen at origin</h3><p data-i18n="cold.s1d">Packed and frozen by trusted importers abroad.</p></div></li>
+                <li class="step"><span class="step__n">02</span><div><h3 data-i18n="cold.s2">Cold storage</h3><p data-i18n="cold.s2d">Held frozen in our Jakarta storage until you order.</p></div></li>
+                <li class="step"><span class="step__n">03</span><div><h3 data-i18n="cold.s3">Refrigerated truck</h3><p data-i18n="cold.s3d">Packed to order and kept frozen in transit.</p></div></li>
+                <li class="step"><span class="step__n">04</span><div><h3 data-i18n="cold.s4">Your kitchen</h3><p data-i18n="cold.s4d">Delivered across Jabodetabek, still frozen.</p></div></li>
+              </ol>
+            </div>
+            <div class="cold__visual" aria-hidden="true">
+              <img class="cv is-active" src="img/cc-1-frozen.webp" alt="" />
+              <img class="cv" src="img/cc-2-storage.webp" alt="" loading="lazy" />
+              <img class="cv cv--wide" src="img/cc-3-truck.webp" alt="" loading="lazy" />
+              <img class="cv" src="img/cc-4-kitchen.webp" alt="" loading="lazy" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 05 ORDERING ============ -->
+    <section class="section ordering" id="ordering" aria-labelledby="ordering-title">
+      <div class="wrap">
+        <div class="head">
+          <h2 id="ordering-title" class="h1"><span class="line" data-i18n="ord.t1">Live prices. Live stock.</span> <span class="line" data-i18n="ord.t2">Reorder in a few taps.</span></h2>
+          <div class="head__aside">
+            <p class="lead" data-i18n="ord.lead">Your team sees today's price and stock before ordering, and every order update arrives as a notification. No calls, no chasing.</p>
+            <a class="textlink" href="https://thehoreca.id/"><span data-i18n="ord.link">Already a customer? Log in to the dashboard</span> <span aria-hidden="true">→</span></a>
+          </div>
+        </div>
+        <div class="stagebox">
+          <div class="stage stage--ordering" id="orderStage" aria-hidden="true">
+            <div class="device browser" style="--x:220;--y:0;--w:980;--h:736">
+              <div class="browser__chrome"><i></i><i></i><i></i><span>thehoreca.id</span></div>
+              <!-- Real seller dashboard screens (Horeca Design Dashboard: Products 3:2731, Order - List 2:866) -->
+              <div class="screen">
+                <img class="shot is-on" id="shotProducts" src="img/screens/seller-products.webp" alt="" width="1440" height="1024" loading="lazy" />
+                <img class="shot" id="shotOrders" src="img/screens/seller-orders.webp" alt="" width="1440" height="1024" loading="lazy" />
+                <i class="hl" id="newRow" style="--l:19.5;--t:21.2;--w:78.8;--h:5.3"></i>
+              </div>
+            </div>
+            <div class="device phone" id="orderPhone" style="--x:0;--y:150;--w:300;--h:617">
+              <div class="phone__screen">
+                <!-- Customer app · Cart (RME-Horeca 3:1093), "Powered by" line removed -->
+                <img class="shot is-on" src="img/screens/app-cart.webp" alt="" width="387" height="852" loading="lazy" />
+                <i class="tap" id="placeOrder" style="--l:4.1;--t:80.3;--w:91.7;--h:4.2"></i>
+              </div>
+              <img class="phone__frame" src="img/screens/iphone-17-air.webp" alt="" width="465" height="956" />
+            </div>
+            <div class="toast" style="--x:840;--y:560;--w:400" data-status="orange"><i></i><div><b data-i18n="toast.t1">Out for delivery</b><p data-i18n="toast.b1">Wagyu ribeye, 5 kg is on its way to your kitchen.</p></div><time data-i18n="toast.now">now</time></div>
+            <div class="toast" style="--x:840;--y:652;--w:388" data-status="blue"><i></i><div><b data-i18n="toast.t2">Order confirmed</b><p data-i18n="toast.b2">Our team confirmed your order for tomorrow morning.</p></div><time data-i18n="toast.2h">2h</time></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 06 PAPERWORK ============ -->
+    <section class="section paperwork" id="paperwork" aria-labelledby="paper-title">
+      <div class="wrap">
+        <div class="head head--paper">
+          <h2 id="paper-title" class="h1" data-i18n="paper.title">Invoice in one click.</h2>
+          <p class="lead head__aside" data-i18n="paper.lead">Every order comes with its invoice and faktur pajak. Payment terms (termin) are arranged with your account team, to fit how your business pays.</p>
+        </div>
+        <div class="stagebox">
+          <div class="stage stage--paper" id="paperStage" aria-hidden="true">
+            <div class="device browser" style="--x:0;--y:0;--w:880;--h:664">
+              <div class="browser__chrome"><i></i><i></i><i></i><span>thehoreca.id</span></div>
+              <!-- Real seller screen: Detail Order, Shipped and Unpaid, with PDF Invoice (163:210). Customer name and address replaced. -->
+              <div class="screen">
+                <img class="shot is-on" src="img/screens/seller-order-detail.webp" alt="" width="1440" height="1024" loading="lazy" />
+                <i class="tap tap--sq" id="pdfBtn" style="--l:61.5;--t:18.9;--w:8.9;--h:3.5"></i>
+              </div>
+              <svg class="cursor" id="paperCursor" width="26" height="26" viewBox="0 0 26 26"><path d="M5.417 3.25 20.584 11.917 14.084 13.542 10.834 20.583Z" fill="#1A1814" stroke="#fff" stroke-width="1.625" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="device phone" id="paperPhone" style="--x:900;--y:40;--w:300;--h:617">
+              <div class="phone__screen">
+                <!-- Customer app · Orders and Invoices (3:1480) then Invoice detail (3:1578) -->
+                <img class="shot is-on" id="shotAppOrders" src="img/screens/app-orders.webp" alt="" width="402" height="874" loading="lazy" />
+                <img class="shot shot--slide" id="shotAppInvoice" src="img/screens/app-invoice.webp" alt="" width="402" height="874" loading="lazy" />
+                <i class="tap" id="dlBtn" style="--l:6;--t:78.6;--w:88;--h:4"></i>
+              </div>
+              <img class="phone__frame" src="img/screens/iphone-17-air.webp" alt="" width="465" height="956" />
+            </div>
+          </div>
+        </div>
+
+        <ul class="bento" role="list">
+          <li class="bc bc--wide">
+            <div class="bc__visual">
+              <div class="mini-browser"><div class="browser__chrome"><i></i><i></i><i></i><span>thehoreca.id</span></div><img src="img/screens/seller-order-detail-crop.webp" alt="" width="1184" height="696" loading="lazy" /></div>
+            </div>
+            <div class="bc__text"><h3 data-i18n="bento.1t">Generated from your order</h3><p data-i18n="bento.1d">Our team issues the invoice straight from your order, with no retyping.</p></div>
+          </li>
+          <li class="bc">
+            <div class="bc__visual papers">
+              <div class="paper paper--inv"><b data-i18n="bento.inv">Invoice</b><i></i><i></i><i></i><i></i><i></i><em></em></div>
+              <div class="paper paper--fp"><b>Faktur pajak</b><i></i><i></i><i></i><i></i><i></i><em></em></div>
+            </div>
+            <div class="bc__text"><h3 data-i18n="bento.2t">Faktur pajak included</h3><p data-i18n="bento.2d">Every invoice comes with its faktur pajak, ready for your tax records.</p></div>
+          </li>
+          <li class="bc">
+            <div class="bc__visual">
+              <div class="mini-phone"><div class="mini-phone__screen"><img src="img/screens/app-orders.webp" alt="" width="402" height="874" loading="lazy" /></div><img class="phone__frame" src="img/screens/iphone-17-air.webp" alt="" width="465" height="956" loading="lazy" /></div>
+            </div>
+            <div class="bc__text"><h3 data-i18n="bento.3t">Shows up in your app</h3><p data-i18n="bento.3d">The invoice appears under your orders as soon as it is issued.</p></div>
+          </li>
+          <li class="bc">
+            <div class="bc__visual dl">
+              <span class="dl__btn" data-i18n="bento.dl">Download PDF</span>
+              <svg class="dl__cursor" width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><path d="M5.417 3.25 20.584 11.917 14.084 13.542 10.834 20.583Z" fill="#1A1814" stroke="#fff" stroke-width="1.625" stroke-linejoin="round"/></svg>
+              <span class="dl__chip"><i></i>INV-······.pdf</span>
+            </div>
+            <div class="bc__text"><h3 data-i18n="bento.4t">Download the PDF in one tap</h3><p data-i18n="bento.4d">Save it, print it or forward it to your finance team.</p></div>
+          </li>
+          <li class="bc">
+            <div class="bc__visual chat">
+              <span class="bubble" data-i18n="bento.q">Can we talk about payment terms?</span>
+              <span class="bubble bubble--team" data-i18n="bento.a">Sure, we'll set them up with you.</span>
+              <small data-i18n="bento.team">Your account team</small>
+            </div>
+            <div class="bc__text"><h3 data-i18n="bento.5t">Payment terms (termin)</h3><p data-i18n="bento.5d">Arranged with your account team, to fit how your business pays.</p></div>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ============ 07 PROOF ============ -->
+    <section class="section proof" id="proof" aria-labelledby="proof-title">
+      <div class="wrap">
+        <div class="proof__head">
+          <h2 id="proof-title" class="proof__num"><span id="proofNum" data-i18n="proof.num">Rp300B+</span></h2>
+          <p class="proof__lead" data-i18n="proof.lead">transacted across Jabodetabek. Part of PT Tiga Akar Mimpi.</p>
+        </div>
+        <div class="stagebox">
+          <div class="pyramid" id="pyramid" aria-hidden="true"><img class="pyramid__ground" src="img/shadow/ground.svg" alt="" /></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 08 JOIN + FORM ============ -->
+    <section class="join" id="apply" aria-labelledby="join-title">
+      <div class="wrap join__grid">
+        <div class="join__how">
+          <h2 id="join-title" class="h1"><span class="line" data-i18n="join.t1">Apply once.</span> <span class="line" data-i18n="join.t2">Order every week.</span></h2>
+          <p class="lead" data-i18n="join.lead">Accounts are by application. We review every kitchen ourselves, then set up your dashboard.</p>
+          <ol class="howto">
+            <li><span>01</span><div><h3 data-i18n="join.s1">Apply</h3><p data-i18n="join.s1d">Tell us about your kitchen.</p></div></li>
+            <li><span>02</span><div><h3 data-i18n="join.s2">We review</h3><p data-i18n="join.s2d">Our team checks each application.</p></div></li>
+            <li><span>03</span><div><h3 data-i18n="join.s3">We set up your account</h3><p data-i18n="join.s3d">You get your own dashboard login.</p></div></li>
+            <li><span>04</span><div><h3 data-i18n="join.s4">Start ordering</h3><p data-i18n="join.s4d">Live prices, stock and paperwork from day one.</p></div></li>
+          </ol>
+        </div>
+        <form class="form" id="applyForm" novalidate>
+          <h3 class="form__title" data-i18n="form.title">Apply for an account</h3>
+          <div class="field">
+            <label for="f-name" data-i18n="form.name">Business name</label>
+            <input id="f-name" name="business" autocomplete="organization" required placeholder="e.g. Kopi Senja, Kemang" data-i18n-ph="form.nameph" />
+            <p class="field__err" data-i18n="form.nameerr">Enter your business name.</p>
+          </div>
+          <div class="field">
+            <label for="f-type" data-i18n="form.type">Business type</label>
+            <select id="f-type" name="type" required>
+              <option value="" selected disabled data-i18n="form.typeph">Choose a type</option>
+              <option value="hotel" data-i18n="form.hotel">Hotel</option>
+              <option value="restaurant" data-i18n="form.restaurant">Restaurant</option>
+              <option value="cafe" data-i18n="form.cafe">Café</option>
+              <option value="other" data-i18n="form.other">Other</option>
+            </select>
+            <p class="field__err" data-i18n="form.typeerr">Choose your business type.</p>
+          </div>
+          <div class="field">
+            <label for="f-contact" data-i18n="form.contact">Contact name and role</label>
+            <input id="f-contact" name="contact" autocomplete="name" required placeholder="e.g. Rina, Executive Chef" data-i18n-ph="form.contactph" />
+            <p class="field__err" data-i18n="form.contacterr">Enter a name and role, e.g. Rina, Executive Chef.</p>
+          </div>
+          <div class="field">
+            <label for="f-wa" data-i18n="form.wa">WhatsApp number</label>
+            <input id="f-wa" name="whatsapp" type="tel" inputmode="tel" autocomplete="tel" required placeholder="+62 812 3456 7890" data-i18n-ph="form.waph" />
+            <p class="field__err" data-i18n="form.waerr">Enter a number with 9 to 15 digits, e.g. +62 812 3456 7890.</p>
+          </div>
+          <div class="field">
+            <label for="f-area" data-i18n="form.area">Delivery area</label>
+            <select id="f-area" name="area" required>
+              <option value="" selected disabled data-i18n="form.areaph">Choose a Jabodetabek city</option>
+              <option>Jakarta Pusat</option><option>Jakarta Utara</option><option>Jakarta Barat</option><option>Jakarta Selatan</option><option>Jakarta Timur</option>
+              <option>Bogor</option><option>Depok</option><option>Tangerang</option><option>Tangerang Selatan</option><option>Bekasi</option>
+            </select>
+            <p class="field__err" data-i18n="form.areaerr">Choose the city we deliver to.</p>
+          </div>
+          <div class="field">
+            <label for="f-vol" data-i18n="form.vol">Estimated monthly volume</label>
+            <!-- Volume bands are placeholders until the sales team confirms them. -->
+            <select id="f-vol" name="volume" required>
+              <option value="" selected disabled data-i18n="form.volph">Choose a range</option>
+              <option value="lt100" data-i18n="form.v1">Under 100 kg</option><option value="100-500" data-i18n="form.v2">100–500 kg</option><option value="500-1000" data-i18n="form.v3">500–1,000 kg</option><option value="gt1000" data-i18n="form.v4">Over 1,000 kg</option>
+            </select>
+            <p class="field__err" data-i18n="form.volerr">Choose a monthly volume range.</p>
+          </div>
+          <button class="btn btn--primary" type="submit" data-i18n="form.submit">Send application</button>
+          <p class="form__note" data-i18n="form.note">We reply on WhatsApp within [X] working days.</p>
+          <div class="form__done" role="status" aria-live="polite" hidden>
+            <h3 data-i18n="form.doneT">Application received</h3>
+            <p data-i18n="form.doneD">We'll review it and reply on WhatsApp within [X] working days.</p>
+          </div>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="footer">
+    <div class="footer__grid">
+      <div class="footer__col footer__col--wide">
+        <p class="eyebrow" data-i18n="foot.company">Company</p>
+        <p>PT Horeca Akar Mimpi · <span data-i18n="foot.partof">part of</span> PT Tiga Akar Mimpi<br />Jl. Panjang Raya No. 70, Jakarta Barat 11530<br /><a href="tel:+622153678064">+62 21 5367 8064</a> · <a href="tel:+622153669283">+62 21 5366 9283</a></p>
+        <p data-i18n="foot.about">PT Horeca Akar Mimpi runs theHoreca, a supply platform for hotels, restaurants and cafés. We source imported meat, keep it frozen and deliver it on one account, with the paperwork your finance team needs.</p>
+      </div>
+      <div class="footer__col">
+        <p class="eyebrow" data-i18n="foot.customers">Customers</p>
+        <p class="footer__links"><a href="https://thehoreca.id/" data-i18n="foot.login">Log in to the dashboard</a><a href="#apply" data-i18n="cta.apply">Apply for an account</a></p>
+        <p class="eyebrow" data-i18n="foot.contact">Contact</p>
+        <p><span data-i18n="foot.scale">Supplying at scale? Talk to us.</span><br />WhatsApp [number]</p>
+        <p>© 2026 theHoreca</p>
+      </div>
+    </div>
+    <hr class="footer__rule" />
+    <div class="wordmark" aria-hidden="true"><span class="wordmark__the">the</span><span class="wordmark__horeca">HORECA</span></div>
+  </footer>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

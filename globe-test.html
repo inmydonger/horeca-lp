@@ -1,0 +1,28 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clay globe test</title>
+<!-- Standalone check: serve this folder (e.g. `npx serve .`) and open globe-test.html.
+     ?p=0..1 pins the scroll progress; without it the page scrolls through 400vh. -->
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.187.0/build/three.module.js"}}</script>
+<style>
+  html,body{margin:0;background:#FAF6EA;font-family:"Hanken Grotesk",system-ui,sans-serif}
+  .track{height:400vh}.track.pinned{height:100vh}
+  .st{position:sticky;top:0;height:100vh;height:100svh;overflow:hidden}
+  canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .globe-label{font:700 14px/1 system-ui,sans-serif;color:#15130F;white-space:nowrap;pointer-events:none}
+</style>
+<div class="track" id="track"><div class="st"><canvas id="gl"></canvas><canvas id="ov"></canvas><div id="lb"></div></div></div>
+<script type="module">
+  import { createGlobe } from './globe.js';
+  const q = new URLSearchParams(location.search);
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const g = createGlobe({ canvas: gl, overlay: ov, labels: lb, reduceMotion, base: './' });
+  window.__g = g;
+  if (q.has('p')) { track.classList.add('pinned'); g.setProgress(+q.get('p'), { immediate: true }); }
+  else {
+    const onScroll = () => { const r = track.getBoundingClientRect(); g.setProgress(-r.top / (r.height - innerHeight)); };
+    addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  }
+  await g.ready; g.start();
+</script>
