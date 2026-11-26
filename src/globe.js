@@ -37,13 +37,17 @@ import {
 const ORANGE = '#E54E26';
 const BLUE = '#224096';
 const JKT = [-6.2, 106.85];
-// Origins. Japan is in the design but still needs confirmation; New Zealand is a
-// placeholder for "other trusted origins" (no label, dashed, quieter).
-// USA and Brazil were tried: from Jakarta's side they arc in over the horizon as stray lines, so they are left out.
+// Origins = Indonesia's main bovine-meat import sources (BPS 2024 via Katadata: Australia 62%,
+// India 22% (mostly buffalo meat), USA 6%, Brazil 6%, New Zealand 4%). Japan is in the design
+// but is NOT in the BPS list and still needs Alvin's confirmation. Origins theHoreca does not
+// actually buy from should be removed here and in CITIES/LANES.
 const ORIGINS = [
   { key: 'au', name: 'Australia', p: [-27.47, 153.03], label: true },
   { key: 'perth', name: 'Perth', p: [-31.95, 115.86] },
+  { key: 'in', name: 'India', p: [19.08, 72.88], label: true },
   { key: 'jp', name: 'Japan', p: [35.68, 139.69], label: true },
+  { key: 'us', name: 'USA', p: [41.26, -95.94], label: true },
+  { key: 'br', name: 'Brazil', p: [-20.47, -54.62], label: true },
   { key: 'nz', name: 'New Zealand', p: [-41.29, 174.78], far: true },
 ];
 
@@ -279,12 +283,13 @@ export function createGlobe({ canvas, overlay, labels, reduceMotion = false, bas
 
   // ---- routes (spin-local). Arcs are great circles lifted off the surface; longer = taller.
   const R0 = 1.02; // just above the clay slab tops
+  const LIFT_MAX = 0.4; // tallest loop (USA/Brazil are almost antipodal to Jakarta)
   const jLocal = ll(JKT[0], JKT[1], R0);
   // The loop leans sideways (out of the great-circle plane) so it reads as a curve even
   // when you look straight down on it; `lean` alternates per city for variety.
   function arc(lat, lon, lean = 0.6) {
     const a = ll(lat, lon, 1).normalize(), b = ll(JKT[0], JKT[1], 1).normalize();
-    const ang = a.angleTo(b), s = Math.sin(ang), lift = 0.1 + 0.95 * (ang / Math.PI);
+    const ang = a.angleTo(b), s = Math.sin(ang), lift = Math.min(0.1 + 0.95 * (ang / Math.PI), LIFT_MAX);
     const side = new Vector3().crossVectors(a, b).normalize();
     const n = 160, pts = [];
     for (let k = 0; k <= n; k++) {
@@ -301,16 +306,23 @@ export function createGlobe({ canvas, overlay, labels, reduceMotion = false, bas
     au: [[-27.47, 153.03], [-33.87, 151.21], [-37.81, 144.96], [-31.95, 115.86], [-34.93, 138.6], [-23.38, 150.51], [-19.26, 146.82]],
     jp: [[35.68, 139.69], [34.69, 135.2], [31.6, 130.56]],
     nz: [[-36.85, 174.76], [-43.53, 172.64]],
+    in: [[19.08, 72.88], [27.88, 78.08], [17.39, 78.49], [28.67, 77.45]], // Mumbai port, Aligarh, Hyderabad, Ghaziabad (buffalo-meat plants)
+    us: [[41.26, -95.94], [37.75, -100.02], [35.22, -101.83], [40.42, -104.71]], // Omaha, Dodge City, Amarillo, Greeley
+    br: [[-23.55, -46.63], [-20.47, -54.62], [-16.69, -49.25], [-15.6, -56.1]], // Sao Paulo, Campo Grande, Goiania, Cuiaba
   };
   const FLIGHTS = Object.fromEntries(Object.entries(CITIES).map(([g, list]) => [g, list.map(([la, lo], i) => arc(la, lo, (i % 2 ? -1 : 1) * (0.45 + 0.1 * (i % 3))))]));
+  // Lanes are weighted roughly by import share: Australia most, then India, then the rest.
+  // D = flight time in seconds (launch to tail landing); long hauls fly a little longer.
   const LANES = [
     { g: 'au', P: 3.1, off: 0.0 }, { g: 'au', P: 3.7, off: 1.4 }, { g: 'au', P: 4.3, off: 2.6 },
-    { g: 'jp', P: 3.9, off: 0.8 }, { g: 'jp', P: 5.3, off: 3.1 }, { g: 'nz', P: 4.9, off: 2.0 },
+    { g: 'in', P: 3.5, off: 0.6 }, { g: 'in', P: 4.6, off: 2.3 },
+    { g: 'us', P: 4.4, off: 1.1, D: 3.4 }, { g: 'br', P: 4.8, off: 3.3, D: 3.4 },
+    { g: 'jp', P: 4.5, off: 0.8 }, { g: 'nz', P: 4.9, off: 2.0 },
   ];
-  const FLIGHT_T = 2.6; // seconds from launch to the tail landing in Jakarta
+  const FLIGHT_T = 2.6;
 
   // ---- comet particles (one dynamic point cloud for every comet)
-  const PMAX = 2400;
+  const PMAX = 6000; // peak is ~4,900 grains with all nine lanes in flight
   const pPos = new Float32Array(PMAX * 3), pSize = new Float32Array(PMAX), pAlpha = new Float32Array(PMAX), pHeat = new Float32Array(PMAX);
   const pGeo = new BufferGeometry();
   const attr = (a, n) => new BufferAttribute(a, n).setUsage(DynamicDrawUsage);
@@ -487,10 +499,11 @@ export function createGlobe({ canvas, overlay, labels, reduceMotion = false, bas
     pc = 0;
     if (live) {
       if (reduceMotion) {
-        routes.forEach((r, i) => streak(900 + i, r, 1, { a: r.o.far ? 0.35 : 0.6, sk, still: true }));
+        // Static arcs only for origins on Jakarta's side; USA/Brazil would cut across the face as long lines.
+        routes.forEach((r, i) => { if (r.ang < 2) streak(900 + i, r, 1, { a: r.o.far ? 0.35 : 0.6, sk, still: true }); });
       } else {
         LANES.forEach((L, li) => {
-          const T = clock + L.off, k = Math.floor(T / L.P), tau = (T - k * L.P) / FLIGHT_T;
+          const T = clock + L.off, k = Math.floor(T / L.P), tau = (T - k * L.P) / (L.D || FLIGHT_T);
           const list = FLIGHTS[L.g], f = list[Math.floor(rnd(li * 31 + k, 11) * list.length)];
           streak(li * 1000 + (k % 997), f, tau, { a: L.g === 'nz' ? 0.8 : 1, sk });
         });
@@ -548,7 +561,7 @@ export function createGlobe({ canvas, overlay, labels, reduceMotion = false, bas
     start, stop, resize,
     renderOnce() { frame(performance.now()); },
     // testing hook: jump the flight clock (seconds) so stills are reproducible
-    _setClock(t) { clock = t; },
+    _setClock(t, spinOffset) { clock = t; if (spinOffset != null) spinA = faceY + spinOffset; },
     destroy() {
       stop(); window.removeEventListener('resize', resize);
       geo.dispose(); mat.dispose(); tex.dispose(); pGeo.dispose(); pMat.dispose(); renderer.dispose();

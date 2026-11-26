@@ -124,8 +124,23 @@ if (!reduce) {
   });
   ScrollTrigger.create({
     trigger: '#originTrack', start: 'top bottom', end: 'bottom top',
-    onToggle: (s) => { if (!globe) return; if (s.isActive && !reduce) globe.start(); else { globe.stop(); globe.renderOnce(); } },
+    onToggle: (s) => {
+      if (!globe) return;
+      if (s.isActive && !reduce) { globe.start(); gsap.ticker.add(clampLabels); }
+      else { globe.stop(); globe.renderOnce(); gsap.ticker.remove(clampLabels); }
+    },
   });
+  // Keep globe labels inside the viewport (e.g. "Jakarta" passing the left limb on phones).
+  // The module positions labels with `transform`; we nudge with the separate `translate` property.
+  function clampLabels() {
+    const m = 8, vw = document.documentElement.clientWidth;
+    $$('.globe-label').forEach((l) => {
+      const dx = +(l.dataset.dx || 0), r = l.getBoundingClientRect();
+      const left = r.left - dx, right = r.right - dx;
+      const nd = left < m ? m - left : right > vw - m ? vw - m - right : 0;
+      if (nd !== dx) { l.dataset.dx = nd; l.style.translate = nd ? `${nd}px 0` : ''; }
+    });
+  }
   if (reduce) { globe?.setProgress(1); globe?.renderOnce(); }
 })();
 

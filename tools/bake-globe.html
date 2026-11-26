@@ -11,7 +11,7 @@
         stored as 0.5 + sd / (2 * RANGE). The shader turns this into a
         pixel-sharp coastline at any zoom, the rounded clay shoulder, the
         contact crease and the cast shadow.
-    G = tone mask (1 = terracotta countries, 0 = sand). Crisp, anti-aliased.
+    G = tone mask (1 = terracotta = Indonesia only, 0 = sand). Crisp, anti-aliased.
     B = 0, A = 255.
 
   The SVG is in Robinson projection; it is reprojected to equirectangular
@@ -26,7 +26,7 @@ window.bake = async function (svgText, opt = {}) {
   const UP = 2;                            // EDT is computed at 2x and averaged down
   const W2 = W * UP, H2 = H * UP;
   const S = opt.raster || 5;               // SVG raster scale (2000 x 857 viewBox)
-  const TONE = new Set(opt.tone || ['AU', 'Australia', 'JP', 'Japan', 'NZ', 'New Zealand', 'US', 'United States', 'BR', 'Brazil']);
+  const TONE = new Set(opt.tone || ['ID', 'Indonesia']);
   const t0 = performance.now(), log = (m) => console.log(((performance.now() - t0) / 1000).toFixed(1) + 's ' + m);
 
   // Robinson calibration fitted to the supplied SVG (rms < 3px)
