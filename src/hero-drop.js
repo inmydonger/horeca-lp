@@ -59,7 +59,7 @@ export function playHeroDrop({ root = document.getElementById('heroVisual'), red
     if (reduce || offscreen) {
       release();
       // Reduced motion: no movement, just a quiet fade so the scene doesn't pop.
-      // WAAPI with an implicit end keyframe fades to each element's own CSS opacity (shadows sit at .9).
+      // WAAPI with an implicit end keyframe fades to each element's own CSS opacity (shadows are baked at their own strength).
       if (reduce && !offscreen && bodies[0]?.animate) {
         bodies.forEach((b, i) => b.animate([{ opacity: 0 }, {}], { duration: 400, delay: i * 30, easing: 'ease-out', fill: 'backwards' }));
       }
@@ -79,10 +79,20 @@ function run(root) {
     const el = root.querySelector(`[data-drop="${name}"]`);
     if (!el) return;
     const body = el.querySelector('.hv__body');
-    const shadows = [...root.querySelectorAll(`[data-for="${name}"] .hv__body`)];
     const [ox, oy] = (el.dataset.o || '50 90').split(' ').map(Number);
     body.style.transformOrigin = `${ox}% ${oy}%`;
-    shadows.forEach((s) => { s.style.transformOrigin = '50% 50%'; });
+    // Shadows scale around the same ground point as the piece, mapped into the shadow's own box.
+    const pr = el.getBoundingClientRect();
+    const gx = pr.left + (pr.width * ox) / 100, gy = pr.top + (pr.height * oy) / 100;
+    const shadow = (kind) => {
+      const s = root.querySelector(`[data-for="${name}"].sh--${kind} .hv__body`);
+      if (!s) return null;
+      const r = s.getBoundingClientRect();
+      s.style.transformOrigin = `${(gx - r.left).toFixed(1)}px ${(gy - r.top).toFixed(1)}px`;
+      return s;
+    };
+    const soft = shadow('soft'), contact = shadow('contact');
+    const shadows = [soft, contact].filter(Boolean);
 
     const rect = el.getBoundingClientRect();
     const H = rect.height;
@@ -94,7 +104,7 @@ function run(root) {
     const tilt = (i % 2 ? 1 : -1) * (2 + (i * 37 % 4)); // deterministic, alternating ±2–5°
 
     pieces.push({
-      body, shadows, H, m, drop, g, omega,
+      body, soft, contact, shadows, H, m, drop, g, omega,
       c: 2 * m.zeta * omega,
       t0: START_DELAY + i * STAGGER,
       phase: 'wait',     // wait → fall → air → rest
@@ -188,14 +198,24 @@ function render(p) {
   p.body.style.transform =
     `translate3d(0, ${p.y.toFixed(2)}px, 0) rotate(${p.r.toFixed(3)}deg) skewX(${p.w.toFixed(3)}deg) scale(${sx.toFixed(4)}, ${sy.toFixed(4)})`;
 
-  // Contact shadow: invisible while high up, tightens and darkens as the piece nears the ground,
-  // and spreads a little when the piece squashes.
-  const near = clamp(1 + p.y / (p.H * 0.6), 0, 1) ** 1.5;
-  const spread = 1 + Math.max(0, p.d) * 0.9;
-  const sc = 0.6 + 0.4 * near;
-  for (const s of p.shadows) {
-    s.style.opacity = (0.9 * near).toFixed(3);
-    s.style.transform = `scale(${(sc * spread).toFixed(4)}, ${sc.toFixed(4)})`;
+  const up = Math.max(0, -p.y); // height above the ground, px
+  const squash = Math.max(0, p.d);
+
+  // Soft cast shadow: shows up as the piece approaches, slides out toward its rest spot
+  // (light is top-left, so a higher piece throws its shadow further down-right) and sharpens in.
+  if (p.soft) {
+    const near = clamp(1 - up / (p.H * 0.8), 0, 1) ** 1.5;
+    const sc = 0.75 + 0.25 * near;
+    p.soft.style.opacity = near.toFixed(3);
+    p.soft.style.transform =
+      `translate3d(${(up * 0.1).toFixed(2)}px, ${(up * 0.05).toFixed(2)}px, 0) scale(${(sc * (1 + squash * 0.5)).toFixed(4)}, ${sc.toFixed(4)})`;
+  }
+  // Contact occlusion only exists at touch: gone a few percent off the ground (so it blinks out on
+  // each hop) and it spreads under the squash.
+  if (p.contact) {
+    const touch = clamp(1 - up / (p.H * 0.06), 0, 1) ** 2;
+    p.contact.style.opacity = touch.toFixed(3);
+    p.contact.style.transform = `scale(${(1 + squash * 0.9).toFixed(4)}, ${(1 + squash * 0.3).toFixed(4)})`;
   }
 }
 
