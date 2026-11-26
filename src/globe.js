@@ -12,10 +12,11 @@
  *   - land is a RAISED clay slab: rounded shoulder, a crease where it meets
  *     the sea, and a real cast shadow towards the lower right;
  *   - fine clay grain is procedural, so it is crisp at any zoom.
- * Comets (orbiting satellites, route draws, resting pulses) are GPU point
- * particles in the same WebGL scene: a bright head that sheds grains which
- * drift, shrink and fade, hidden correctly behind the globe.
- * The overlay canvas holds the vector bits: faint route lines, pins, ground shadow.
+ * Flights are GPU point particles in the same WebGL scene, on their OWN clock
+ * (scroll only moves, turns and scales the globe): a glittering streak grows
+ * out of an origin city, races along a tall arc, lands in Jakarta with a spark
+ * burst and its tail crumbles away. Hidden correctly behind the globe.
+ * The overlay canvas holds the vector bits: pins, Jakarta pulse, ground shadow.
  *
  * API
  *   const g = createGlobe({ canvas, overlay, labels, reduceMotion, base })
@@ -28,7 +29,7 @@
  */
 import {
   WebGLRenderer, Scene, PerspectiveCamera, Group, Mesh, SphereGeometry, ShaderMaterial,
-  TextureLoader, Vector3, Matrix4, Euler, Color, RepeatWrapping, ClampToEdgeWrapping,
+  TextureLoader, Vector3, Matrix4, Color, RepeatWrapping, ClampToEdgeWrapping,
   BufferGeometry, BufferAttribute, Points, DynamicDrawUsage,
   LinearMipmapLinearFilter, LinearFilter, NoColorSpace,
 } from 'three';
@@ -276,32 +277,37 @@ export function createGlobe({ canvas, overlay, labels, reduceMotion = false, bas
   globe.renderOrder = 1;
   spin.add(globe);
 
-  // ---- routes (spin-local)
+  // ---- routes (spin-local). Arcs are great circles lifted off the surface; longer = taller.
   const R0 = 1.02; // just above the clay slab tops
   const jLocal = ll(JKT[0], JKT[1], R0);
-  const routes = ORIGINS.map((o, i) => {
-    const a = ll(o.p[0], o.p[1], 1).normalize();
-    const b = ll(JKT[0], JKT[1], 1).normalize();
-    const ang = a.angleTo(b);
-    const lift = 0.05 + 0.5 * (ang / Math.PI);
-    const n = 120, pts = [];
+  // The loop leans sideways (out of the great-circle plane) so it reads as a curve even
+  // when you look straight down on it; `lean` alternates per city for variety.
+  function arc(lat, lon, lean = 0.6) {
+    const a = ll(lat, lon, 1).normalize(), b = ll(JKT[0], JKT[1], 1).normalize();
+    const ang = a.angleTo(b), s = Math.sin(ang), lift = 0.1 + 0.95 * (ang / Math.PI);
+    const side = new Vector3().crossVectors(a, b).normalize();
+    const n = 160, pts = [];
     for (let k = 0; k <= n; k++) {
-      const t = k / n, s = Math.sin(ang);
+      const t = k / n, h = lift * Math.sin(Math.PI * t);
       const v = a.clone().multiplyScalar(Math.sin((1 - t) * ang) / s).add(b.clone().multiplyScalar(Math.sin(t * ang) / s));
-      pts.push(v.multiplyScalar(R0 + lift * Math.sin(Math.PI * t)));
+      pts.push(v.clone().multiplyScalar(R0 + h * Math.cos(lean)).addScaledVector(side, h * Math.sin(lean)));
     }
-    return { o, pts, origin: ll(o.p[0], o.p[1], R0), delay: i * 0.016, phase: (i * 0.37) % 1, w: new Array(n + 1) };
-  });
-
-  // ---- satellites on tilted orbits (world-local: they don't spin with the globe)
-  const orbits = [
-    { r: 1.3, rot: new Euler(1.2, 0, 0.36), speed: 0.5 },
-    { r: 1.44, rot: new Euler(-1.02, 0, -0.55), speed: 0.38 },
-    { r: 1.22, rot: new Euler(0.8, 0.4, 1.05), speed: 0.6 },
-  ].map((d) => ({ ...d, m: new Matrix4().makeRotationFromEuler(d.rot) }));
-  // two satellites per orbit; the first ones drop onto the route origins, the rest fade out
-  const sats = Array.from({ length: 6 }, (_, i) => ({ orbit: orbits[i % 3], phase: (i / 3 | 0) * Math.PI + i * 0.9, route: i < ORIGINS.length ? i : -1 }));
-
+    return { pts, ang, origin: ll(lat, lon, R0) };
+  }
+  const routes = ORIGINS.map((o, i) => ({ o, ...arc(o.p[0], o.p[1], i % 2 ? -0.6 : 0.6) }));
+  // Flights run on their own clock, never on scroll. Each lane fires a flight from one of its
+  // cities into Jakarta, rests, and fires again; lanes are staggered so arcs overlap like a live feed.
+  const CITIES = {
+    au: [[-27.47, 153.03], [-33.87, 151.21], [-37.81, 144.96], [-31.95, 115.86], [-34.93, 138.6], [-23.38, 150.51], [-19.26, 146.82]],
+    jp: [[35.68, 139.69], [34.69, 135.2], [31.6, 130.56]],
+    nz: [[-36.85, 174.76], [-43.53, 172.64]],
+  };
+  const FLIGHTS = Object.fromEntries(Object.entries(CITIES).map(([g, list]) => [g, list.map(([la, lo], i) => arc(la, lo, (i % 2 ? -1 : 1) * (0.45 + 0.1 * (i % 3))))]));
+  const LANES = [
+    { g: 'au', P: 3.1, off: 0.0 }, { g: 'au', P: 3.7, off: 1.4 }, { g: 'au', P: 4.3, off: 2.6 },
+    { g: 'jp', P: 3.9, off: 0.8 }, { g: 'jp', P: 5.3, off: 3.1 }, { g: 'nz', P: 4.9, off: 2.0 },
+  ];
+  const FLIGHT_T = 2.6; // seconds from launch to the tail landing in Jakarta
 
   // ---- comet particles (one dynamic point cloud for every comet)
   const PMAX = 2400;
@@ -327,33 +333,49 @@ export function createGlobe({ canvas, overlay, labels, reduceMotion = false, bas
     pPos[pc * 3] = P.x; pPos[pc * 3 + 1] = P.y; pPos[pc * 3 + 2] = P.z;
     pSize[pc] = size; pAlpha[pc] = Math.min(1, alpha); pHeat[pc] = heat; pc++;
   }
-  const cP = new Vector3();
-  // A comet: a bright head plus grains it sheds. Each grain is born at the head, stays roughly
-  // where it was shed, drifts a little sideways, shrinks and fades. Stateless (seeded), so it
-  // looks the same whether you scroll forwards or back.
-  function comet(id, pathAt, h, L, { n = 70, a = 1, size = 1, spread = 0.03, life = 0.9, uMin = -Infinity, sk = 1 }) {
-    if (a <= 0.003) return;
+  const cP = new Vector3(), cQ = new Vector3();
+  const curveAt = (pts, u, out) => { const n = pts.length - 1, x = clamp(u, 0, 1) * n, k = Math.min(n - 1, x | 0); return spinToWorld(out.copy(pts[k]).lerp(pts[k + 1], x - k), out); };
+  const easeIn = (t) => t * t * t;
+  // One flight: a bright streak that grows out of the origin, races along the arc and is
+  // pulled into Jakarta, its tail crumbling into sparks. Built from densely packed grains,
+  // so the line glitters instead of reading as a solid tube.
+  function streak(id, f, tau, { a = 1, sk = 1, still = false }) {
+    if (!still && (tau <= 0 || tau >= 1)) return;
+    const head = still ? 1 : ease(clamp(tau / 0.6, 0, 1));
+    const tail = still ? 0 : easeIn(clamp((tau - 0.2) / 0.8, 0, 1));
+    const len = head - tail; if (len <= 0.002) return;
     const S = world.scale.x;
+    const n = Math.max(12, Math.round(len * (140 + 420 * f.ang)));
     for (let i = 0; i < n; i++) {
-      const seed = id * 977 + i;
-      const r1 = rnd(seed, 1), r2 = rnd(seed, 2), r3 = rnd(seed, 3);
-      const b = (r1 + clock / (life * (0.75 + 0.5 * r2))) % 1; // age, 0 = just shed
-      const u = h - b * L * (0.85 + 0.3 * r3);
-      if (u < uMin) continue;
-      pathAt(u, cP);
-      const j = spread * S * Math.pow(b, 1.2) * (0.35 + r3);
-      cP.x += (rnd(seed, 4) - 0.5) * 2 * j; cP.y += (rnd(seed, 5) - 0.5) * 2 * j; cP.z += (rnd(seed, 6) - 0.5) * 2 * j;
-      const tw = 0.7 + 0.3 * Math.sin(clock * (6 + 6 * r2) + r1 * 40);
-      emit(cP, sk * size * (1.6 + 4.6 * (1 - b) * (0.4 + 0.8 * r2)), a * Math.pow(1 - b, 1.35) * tw, (1 - b) * (r3 > 0.7 ? 0.9 : 0.3));
+      const seed = id * 7919 + i, r1 = rnd(seed, 1), r2 = rnd(seed, 2), r3 = rnd(seed, 3);
+      const w = (i + r1) / n;                         // 0 = tail, 1 = head
+      curveAt(f.pts, tail + len * w, cP);
+      const crumble = Math.pow(1 - w, 4) * 0.02 * S * (still ? 0 : 1);
+      cP.x += (rnd(seed, 4) - 0.5) * 2 * crumble * r3; cP.y += (rnd(seed, 5) - 0.5) * 2 * crumble * r3; cP.z += (rnd(seed, 6) - 0.5) * 2 * crumble * r3;
+      const tw = still ? 1 : 0.6 + 0.4 * Math.sin(clock * (9 + 12 * r2) + r1 * 60);
+      const al = a * (0.25 + 0.75 * Math.pow(w, 1.1)) * tw;
+      emit(cP, sk * (3.2 + 3.4 * w * (0.6 + 0.8 * r2)), al, 0.25 + 0.75 * w * w);
+      if (i % 3 === 0) emit(cP, sk * (12 + 12 * w), al * 0.12, 0);   // soft bloom along the line
     }
-    pathAt(h, cP);
-    emit(cP, 34 * sk * size, 0.2 * a, 0.0);    // halo
-    emit(cP, 15 * sk * size, a, 1);            // head
-  }
-  // route i as a function of u ∈ [0, 1] (origin → Jakarta), in world space
-  function routeAt(r) {
-    const n = r.pts.length - 1;
-    return (u, out) => { const x = clamp(u, 0, 1) * n, k = Math.min(n - 1, x | 0), f = x - k; return spinToWorld(out.copy(r.pts[k]).lerp(r.pts[k + 1], f), out); };
+    if (!still && head < 1) {
+      curveAt(f.pts, head, cP);
+      emit(cP, 40 * sk, 0.28 * a, 0);
+      emit(cP, 13 * sk, a, 1);
+    }
+    // launch flash at the origin
+    if (!still && tau < 0.18) { curveAt(f.pts, 0, cP); const k = 1 - tau / 0.18; emit(cP, 16 * sk * k, 0.6 * a * k, 1); }
+    // arrival: sparks thrown out from Jakarta as the head lands
+    if (!still && tau > 0.58) {
+      const bt = clamp((tau - 0.58) / 0.42, 0, 1);
+      spinToWorld(jLocal, cQ);
+      for (let i = 0; i < 22; i++) {
+        const seed = id * 131 + i;
+        cP.set(rnd(seed, 7) - 0.5, rnd(seed, 8) - 0.5, rnd(seed, 9) - 0.5).normalize().multiplyScalar(0.05 * S * easeOut(bt) * (0.4 + rnd(seed, 10)));
+        cP.add(cQ);
+        emit(cP, sk * (2.6 - 1.6 * bt), a * Math.pow(1 - bt, 1.5), 1 - bt);
+      }
+      if (bt < 0.5) emit(cQ, 22 * sk * (1 - bt), 0.45 * a * (1 - 2 * bt), 1);
+    }
   }
 
   // ---- labels
@@ -401,21 +423,6 @@ export function createGlobe({ canvas, overlay, labels, reduceMotion = false, bas
   const spinToWorld = (v, out = new Vector3()) => out.copy(v).applyMatrix4(spin.matrixWorld);
   const proj = (worldV) => { const [x, y] = toScreen(worldV); return { x, y, v: visibility(worldV) }; };
 
-  // Thin vector line with an alpha/width ramp from tail (0) to head (1); butt caps so segments never bead.
-  function line(pts, { a0 = 0, a1 = 1, w0 = 0.6, w1 = 1.4, dash = 0, gamma = 0.8 }) {
-    const n = pts.length; if (n < 2) return;
-    ctx.lineCap = 'butt'; ctx.strokeStyle = ORANGE;
-    for (let i = 1; i < n; i++) {
-      const p0 = pts[i - 1], p1 = pts[i];
-      const vis = Math.min(p0.v, p1.v); if (vis <= 0.01) continue;
-      if (dash && Math.floor(i / dash) % 2) continue;
-      const t = Math.pow(i / (n - 1), gamma);
-      const a = (a0 + (a1 - a0) * t) * vis; if (a <= 0.004) continue;
-      ctx.globalAlpha = a; ctx.lineWidth = (w0 + (w1 - w0) * t) * dpr;
-      ctx.beginPath(); ctx.moveTo(p0.x * dpr, p0.y * dpr); ctx.lineTo(p1.x * dpr, p1.y * dpr); ctx.stroke();
-    }
-    ctx.globalAlpha = 1;
-  }
   function dot(x, y, r, fill, stroke, sw, alpha = 1) {
     if (alpha <= 0.004) return;
     ctx.globalAlpha = alpha;
@@ -423,10 +430,6 @@ export function createGlobe({ canvas, overlay, labels, reduceMotion = false, bas
     if (fill) { ctx.fillStyle = fill; ctx.fill(); }
     if (stroke) { ctx.lineWidth = sw * dpr; ctx.strokeStyle = stroke; ctx.stroke(); }
     ctx.globalAlpha = 1;
-  }
-  function orbitPoint(orbit, ang, out = new Vector3()) {
-    out.set(Math.cos(ang) * orbit.r, 0, Math.sin(ang) * orbit.r).applyMatrix4(orbit.m);
-    return out.multiplyScalar(world.scale.x).add(world.position);
   }
   // soft contact shadow under the ball, clipped so it never darkens the globe itself
   function groundShadow(cx, cy, R, a) {
@@ -444,7 +447,7 @@ export function createGlobe({ canvas, overlay, labels, reduceMotion = false, bas
 
   // ---- state
   let progress = reduceMotion ? 1 : 0, pSm = progress;
-  let spinA = -1.4, last = performance.now(), running = false, raf = 0, clock = 0;
+  let spinA = faceY - 0.4, last = performance.now(), running = false, raf = 0, clock = 0;
   const NARROW = 760;
   const invSpin = new Matrix4();
 
@@ -478,36 +481,22 @@ export function createGlobe({ canvas, overlay, labels, reduceMotion = false, bas
     invSpin.copy(globe.matrixWorld).invert();
     uniforms.uKeyObj.value.copy(keyDir).transformDirection(invSpin);
 
-    const satOn = seg(p, 0.3, 0.44);
-    const drop = ease(seg(p, 0.6, 0.68));
     const sk = clamp(world.scale.x / (0.4 * unit), 0.7, 1.3); // sprite scale with globe size
-    const originVis = seg(p, 0.62, 0.7);
+    const live = uniforms.uReady.value;
 
-    // ---------- particle comets ----------
+    // ---------- flights (time-based; scroll only moves the globe) ----------
     pc = 0;
-    // satellites on tilted orbits; at the drop they fall onto the route origins
-    if (satOn > 0 && drop < 1) {
-      sats.forEach((s, i) => {
-        const o = s.orbit, head = clock * o.speed + s.phase;
-        const rt = s.route >= 0 ? routes[s.route] : null;
-        const to = drop > 0 && rt ? spinToWorld(rt.origin) : null;
-        const path = (u, out) => { orbitPoint(o, u, out); if (to) out.lerp(to, drop); return out; };
-        const a = satOn * (rt ? 1 - drop * 0.3 : 1 - drop) * (rt && rt.o.far ? 0.7 : 1);
-        comet(10 + i, path, head, 1.5, { n: 130, a, sk, spread: 0.035, life: 1.0 });
-      });
-    }
-    routes.forEach((r, i) => {
-      const path = routeAt(r), far = r.o.far;
-      // drawing: the comet flies origin → Jakarta as you scroll
-      const t = easeOut(seg(p, 0.66 + r.delay, 0.86 + r.delay));
-      if (t > 0 && t < 1) comet(30 + i, path, t, 0.34, { n: 150, a: far ? 0.7 : 1, sk, uMin: 0, spread: 0.034, life: 0.8 });
-      // resting: a comet keeps running each route into Jakarta
-      if (rest > 0 && !reduceMotion) {
-        const cyc = (clock * (far ? 0.11 : 0.15) + r.phase) % 1;
-        const fade = rest * Math.min(1, cyc * 6) * Math.min(1, (1 - cyc) * 12) * (far ? 0.6 : 1);
-        comet(50 + i, path, easeOut(cyc), 0.26, { n: 100, a: fade, size: 0.85, sk, uMin: 0, spread: 0.022, life: 0.7 });
+    if (live) {
+      if (reduceMotion) {
+        routes.forEach((r, i) => streak(900 + i, r, 1, { a: r.o.far ? 0.35 : 0.6, sk, still: true }));
+      } else {
+        LANES.forEach((L, li) => {
+          const T = clock + L.off, k = Math.floor(T / L.P), tau = (T - k * L.P) / FLIGHT_T;
+          const list = FLIGHTS[L.g], f = list[Math.floor(rnd(li * 31 + k, 11) * list.length)];
+          streak(li * 1000 + (k % 997), f, tau, { a: L.g === 'nz' ? 0.8 : 1, sk });
+        });
       }
-    });
+    }
     pGeo.setDrawRange(0, pc);
     for (const k of ['position', 'aSize', 'aAlpha', 'aHeat']) { const at = pGeo.getAttribute(k); at.clearUpdateRanges(); at.addUpdateRange(0, pc * at.itemSize); at.needsUpdate = true; }
 
@@ -521,25 +510,17 @@ export function createGlobe({ canvas, overlay, labels, reduceMotion = false, bas
 
     routes.forEach((r) => {
       const far = r.o.far;
-      const t = easeOut(seg(p, 0.66 + r.delay, 0.86 + r.delay));
-      if (t > 0) {
-        const pts = r.pts.map((v) => proj(spinToWorld(v)));
-        const n = Math.max(2, Math.round(t * (pts.length - 1)) + 1);
-        // the line the comet leaves behind: fades in from the origin, never a solid band
-        line(pts.slice(0, n), { a0: far ? 0 : 0.2, a1: far ? 0.55 : 0.95, w0: 0.8, w1: (far ? 1.1 : 1.8) * sk, dash: far ? 3 : 0 });
-      }
       const o = proj(spinToWorld(r.origin)); r.screen = o;
-      if (originVis > 0) dot(o.x, o.y, (far ? 3.2 : 5) * sk, '#fff', ORANGE, far ? 1.5 : 2, originVis * o.v);
+      dot(o.x, o.y, (far ? 3.2 : 4.5) * sk, '#fff', ORANGE, far ? 1.5 : 2, live * o.v);
     });
 
     // Jakarta pin + pulse
-    const jIn = seg(p, 0.55, 0.7);
+    const jIn = live;
     const J = proj(spinToWorld(jLocal));
     if (jIn > 0 && J.v > 0) {
-      const pr = seg(p, 0.86, 0.96);
-      if (pr > 0) {
-        const ph = reduceMotion ? 0.5 : (clock * 0.55) % 1;
-        dot(J.x, J.y, (9 + 20 * easeOut(ph)) * sk, null, BLUE, 1.5, 0.5 * (1 - ph) * pr * J.v);
+      if (!reduceMotion) {
+        const ph = (clock * 0.55) % 1;
+        dot(J.x, J.y, (9 + 20 * easeOut(ph)) * sk, null, BLUE, 1.5, 0.45 * (1 - ph) * J.v);
       }
       dot(J.x, J.y, 13 * sk, 'rgba(34,64,150,0.16)', null, 0, jIn * J.v);
       dot(J.x, J.y, 6.5 * sk, BLUE, '#fff', 2.5, jIn * J.v);
@@ -567,6 +548,8 @@ export function createGlobe({ canvas, overlay, labels, reduceMotion = false, bas
     setProgress(p, opts) { progress = clamp(p, 0, 1); if (opts && opts.immediate) pSm = progress; },
     start, stop, resize,
     renderOnce() { frame(performance.now()); },
+    // testing hook: jump the flight clock (seconds) so stills are reproducible
+    _setClock(t) { clock = t; },
     destroy() {
       stop(); window.removeEventListener('resize', resize);
       geo.dispose(); mat.dispose(); tex.dispose(); pGeo.dispose(); pMat.dispose(); renderer.dispose();
