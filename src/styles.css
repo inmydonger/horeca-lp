@@ -131,10 +131,13 @@ ol, ul { margin: 0; padding: 0; list-style: none; }
 .hero__stage { position: absolute; inset: 0; pointer-events: none; }
 .hero__visual { position: absolute; left: calc(504 * var(--u)); top: 0; width: calc(1299 * var(--u)); aspect-ratio: 1; }
 .hv { position: absolute; left: calc(var(--x) * var(--u)); top: calc(var(--y) * var(--u)); width: calc(var(--w) * var(--u)); height: calc(var(--h) * var(--u)); will-change: transform; }
-.hv.sh { opacity: .9; }
-.hv.piece img { width: 100%; height: 100%; }
-.tbone { overflow: hidden; }
-.tbone i { position: absolute; inset: 0; background: linear-gradient(170deg, transparent 55%, rgb(60 30 10 / .08)); mix-blend-mode: multiply; }
+.hv__body { display: block; width: 100%; height: 100%; }
+.hv.sh .hv__body { opacity: .9; }
+.tbone .hv__body { position: relative; overflow: hidden; }
+.tbone .hv__body img { display: block; width: 100%; height: 100%; }
+.tbone i { position: absolute; inset: 0; background: linear-gradient(170deg, transparent 55%, rgb(60 30 10 / .08)); mix-blend-mode: multiply; -webkit-mask-size: 100% 100%; mask-size: 100% 100%; } /* masked to the cut so it never shows as a box when the piece moves */
+/* hero entrance (src/hero-drop.js): hold pieces until their images are decoded, then drop */
+.hero-drop-wait .hero__visual .hv__body { visibility: hidden; }
 
 @media (max-width: 760px) {
   .hero__frame { --u: calc(100vw / 1000); height: auto; max-height: none; display: flex; flex-direction: column; padding-bottom: 40px; }

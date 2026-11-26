@@ -2,6 +2,7 @@ import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import Lenis from 'lenis';
 import { dict } from './i18n.js';
+import { holdHeroPieces, playHeroDrop } from './hero-drop.js';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -68,16 +69,15 @@ $$('.nav__links a').forEach((a) => {
 });
 
 /* ---------------- hero ---------------- */
+// Outer .hv elements carry the parallax below; their inner .hv__body carries the drop (hero-drop.js).
 const pieces = $$('#heroVisual .hv');
+holdHeroPieces();
+playHeroDrop({ root: $('#heroVisual'), reduce });
 if (!reduce) {
   const tl = gsap.timeline({ defaults: { ease: 'expo.out' } });
   tl.from('.hero__title .line', { yPercent: 40, opacity: 0, duration: 1.1, stagger: 0.08 })
     .from('.hero__lead', { y: 16, opacity: 0, duration: 1 }, 0.25)
-    .from('.hero__ctas > *', { y: 16, opacity: 0, duration: 0.9, stagger: 0.06 }, 0.35)
-    .from(pieces, {
-      y: (i, el) => 60 + 40 * Number(el.dataset.depth || 0.5), opacity: 0, scale: 0.94,
-      duration: 1.4, stagger: { each: 0.04, from: 'start' }, ease: 'expo.out',
-    }, 0.1);
+    .from('.hero__ctas > *', { y: 16, opacity: 0, duration: 0.9, stagger: 0.06 }, 0.35);
 
   // scroll parallax: deeper pieces travel further
   pieces.forEach((el) => {

@@ -49,23 +49,25 @@
         </div>
         <div class="hero__stage" aria-hidden="true">
           <div class="hero__visual" id="heroVisual">
-            <!-- positions are Figma "visual" frame coordinates (1299 × 1299) -->
-            <img class="hv sh" data-depth=".3" style="--x:323.5;--y:464.5;--w:501;--h:293" src="img/shadow/h142.svg" alt="" />
-            <img class="hv sh" data-depth=".5" style="--x:752;--y:285;--w:501;--h:293" src="img/shadow/h142.svg" alt="" />
-            <img class="hv piece pepper" data-depth=".9" style="--x:617;--y:323;--w:116;--h:117" src="img/peppercorns.webp" alt="" />
-            <img class="hv piece" data-depth=".3" style="--x:268.91;--y:187.74;--w:590.67;--h:590.67" src="img/lamb-rack.webp" alt="" />
-            <img class="hv sh" data-depth=".8" style="--x:682;--y:672.5;--w:266;--h:209" src="img/shadow/h149.svg" alt="" />
-            <img class="hv sh" data-depth=".6" style="--x:51;--y:688;--w:454;--h:241" src="img/shadow/h150.svg" alt="" />
-            <img class="hv piece" data-depth=".8" style="--x:654.19;--y:636.81;--w:380.17;--h:253.87" src="img/lemongrass.webp" alt="" />
-            <div class="hv piece tbone" data-depth=".6" style="--x:38;--y:504.13;--w:461.82;--h:461.82"><img src="img/t-bone.webp" alt="" /><i></i></div>
-            <img class="hv piece" data-depth=".5" style="--x:762.62;--y:224.74;--w:418.45;--h:279.39" src="img/brisket.webp" alt="" />
-            <img class="hv sh" data-depth="1" style="--x:308.68;--y:825.59;--w:240;--h:178" src="img/shadow/h160.svg" alt="" />
-            <img class="hv sh" data-depth="1" style="--x:397.79;--y:877.46;--w:240;--h:178" src="img/shadow/h160.svg" alt="" />
-            <img class="hv sh" data-depth="1" style="--x:531.79;--y:935.46;--w:240;--h:178" src="img/shadow/h160.svg" alt="" />
-            <img class="hv piece" data-depth="1" style="--x:291.87;--y:708.25;--w:470.75;--h:470.75" src="img/short-ribs.webp" alt="" />
-            <img class="hv sh" data-depth=".7" style="--x:759;--y:437;--w:310;--h:203" src="img/shadow/h164.svg" alt="" />
-            <img class="hv piece" data-depth=".7" style="--x:748.59;--y:413.55;--w:441.41;--h:294.7" src="img/tenderloin.webp" alt="" />
-            <img class="hv piece" data-depth="1.1" style="--x:969.3;--y:723.56;--w:184.98;--h:184.98" src="img/rosemary.webp" alt="" />
+            <!-- positions are Figma "visual" frame coordinates (1299 × 1299).
+                 Outer .hv = layout + parallax; inner .hv__body = drop/squash (src/hero-drop.js).
+                 data-drop names a piece; a shadow's data-for points at its piece. data-o = contact point (% of box). -->
+            <div class="hv sh" data-depth=".3" data-for="lamb" style="--x:323.5;--y:464.5;--w:501;--h:293"><img class="hv__body" src="img/shadow/h142.svg" alt="" /></div>
+            <div class="hv sh" data-depth=".5" data-for="brisket" style="--x:752;--y:285;--w:501;--h:293"><img class="hv__body" src="img/shadow/h142.svg" alt="" /></div>
+            <div class="hv piece pepper" data-depth=".9" data-drop="pepper" data-o="50 77" style="--x:617;--y:323;--w:116;--h:117"><img class="hv__body" src="img/peppercorns.webp" alt="" /></div>
+            <div class="hv piece" data-depth=".3" data-drop="lamb" data-o="49 88" style="--x:268.91;--y:187.74;--w:590.67;--h:590.67"><img class="hv__body" src="img/lamb-rack.webp" alt="" /></div>
+            <div class="hv sh" data-depth=".8" data-for="lemongrass" style="--x:682;--y:672.5;--w:266;--h:209"><img class="hv__body" src="img/shadow/h149.svg" alt="" /></div>
+            <div class="hv sh" data-depth=".6" data-for="tbone" style="--x:51;--y:688;--w:454;--h:241"><img class="hv__body" src="img/shadow/h150.svg" alt="" /></div>
+            <div class="hv piece" data-depth=".8" data-drop="lemongrass" data-o="51 92" style="--x:654.19;--y:636.81;--w:380.17;--h:253.87"><img class="hv__body" src="img/lemongrass.webp" alt="" /></div>
+            <div class="hv piece tbone" data-depth=".6" data-drop="tbone" data-o="50 86" style="--x:38;--y:504.13;--w:461.82;--h:461.82"><div class="hv__body"><img src="img/t-bone.webp" alt="" /><i style="-webkit-mask-image:url(img/t-bone.webp);mask-image:url(img/t-bone.webp)"></i></div></div>
+            <div class="hv piece" data-depth=".5" data-drop="brisket" data-o="50 92" style="--x:762.62;--y:224.74;--w:418.45;--h:279.39"><img class="hv__body" src="img/brisket.webp" alt="" /></div>
+            <div class="hv sh" data-depth="1" data-for="ribs" style="--x:308.68;--y:825.59;--w:240;--h:178"><img class="hv__body" src="img/shadow/h160.svg" alt="" /></div>
+            <div class="hv sh" data-depth="1" data-for="ribs" style="--x:397.79;--y:877.46;--w:240;--h:178"><img class="hv__body" src="img/shadow/h160.svg" alt="" /></div>
+            <div class="hv sh" data-depth="1" data-for="ribs" style="--x:531.79;--y:935.46;--w:240;--h:178"><img class="hv__body" src="img/shadow/h160.svg" alt="" /></div>
+            <div class="hv piece" data-depth="1" data-drop="ribs" data-o="51 85" style="--x:291.87;--y:708.25;--w:470.75;--h:470.75"><img class="hv__body" src="img/short-ribs.webp" alt="" /></div>
+            <div class="hv sh" data-depth=".7" data-for="tenderloin" style="--x:759;--y:437;--w:310;--h:203"><img class="hv__body" src="img/shadow/h164.svg" alt="" /></div>
+            <div class="hv piece" data-depth=".7" data-drop="tenderloin" data-o="50 91" style="--x:748.59;--y:413.55;--w:441.41;--h:294.7"><img class="hv__body" src="img/tenderloin.webp" alt="" /></div>
+            <div class="hv piece" data-depth="1.1" data-drop="rosemary" data-o="52 87" style="--x:969.3;--y:723.56;--w:184.98;--h:184.98"><img class="hv__body" src="img/rosemary.webp" alt="" /></div>
           </div>
         </div>
       </div>
