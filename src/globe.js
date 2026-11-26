@@ -37,17 +37,17 @@ import {
 const ORANGE = '#E54E26';
 const BLUE = '#224096';
 const JKT = [-6.2, 106.85];
-// Origins = Indonesia's main bovine-meat import sources (BPS 2024 via Katadata: Australia 62%,
-// India 22% (mostly buffalo meat), USA 6%, Brazil 6%, New Zealand 4%). Japan is in the design
-// but is NOT in the BPS list and still needs Alvin's confirmation. Origins theHoreca does not
-// actually buy from should be removed here and in CITIES/LANES.
+// Trail sources = Indonesia's main bovine-meat import origins (BPS 2024 via Katadata: Australia 62%,
+// India 22% (mostly buffalo meat), USA 6%, Brazil 6%, New Zealand 4%), plus Japan (wagyu).
+// theHoreca buys from Indonesian importers, so NO origin is named on the page: no pins, no
+// country labels, only anonymous trails into Jakarta. ORIGINS feeds the reduced-motion static arcs.
 const ORIGINS = [
-  { key: 'au', name: 'Australia', p: [-27.47, 153.03], label: true },
+  { key: 'au', name: 'Australia', p: [-27.47, 153.03] },
   { key: 'perth', name: 'Perth', p: [-31.95, 115.86] },
-  { key: 'in', name: 'India', p: [19.08, 72.88], label: true },
-  { key: 'jp', name: 'Japan', p: [35.68, 139.69], label: true },
-  { key: 'us', name: 'USA', p: [41.26, -95.94], label: true },
-  { key: 'br', name: 'Brazil', p: [-20.47, -54.62], label: true },
+  { key: 'in', name: 'India', p: [19.08, 72.88] },
+  { key: 'jp', name: 'Japan', p: [35.68, 139.69] },
+  { key: 'us', name: 'USA', p: [41.26, -95.94] },
+  { key: 'br', name: 'Brazil', p: [-20.47, -54.62] },
   { key: 'nz', name: 'New Zealand', p: [-41.29, 174.78], far: true },
 ];
 
@@ -317,12 +317,13 @@ export function createGlobe({ canvas, overlay, labels, reduceMotion = false, bas
     { g: 'au', P: 3.1, off: 0.0 }, { g: 'au', P: 3.7, off: 1.4 }, { g: 'au', P: 4.3, off: 2.6 },
     { g: 'in', P: 3.5, off: 0.6 }, { g: 'in', P: 4.6, off: 2.3 },
     { g: 'us', P: 4.4, off: 1.1, D: 3.4 }, { g: 'br', P: 4.8, off: 3.3, D: 3.4 },
-    { g: 'jp', P: 4.5, off: 0.8 }, { g: 'nz', P: 4.9, off: 2.0 },
+    { g: 'jp', P: 4.5, off: 0.8 }, { g: 'jp', P: 5.6, off: 3.6 },
+    { g: 'nz', P: 4.9, off: 2.0 }, { g: 'nz', P: 6.1, off: 4.2 },
   ];
   const FLIGHT_T = 2.6;
 
   // ---- comet particles (one dynamic point cloud for every comet)
-  const PMAX = 6000; // peak is ~4,900 grains with all nine lanes in flight
+  const PMAX = 8000; // peak is ~5,500 grains with all eleven lanes in flight
   const pPos = new Float32Array(PMAX * 3), pSize = new Float32Array(PMAX), pAlpha = new Float32Array(PMAX), pHeat = new Float32Array(PMAX);
   const pGeo = new BufferGeometry();
   const attr = (a, n) => new BufferAttribute(a, n).setUsage(DynamicDrawUsage);
@@ -393,7 +394,7 @@ export function createGlobe({ canvas, overlay, labels, reduceMotion = false, bas
   // ---- labels
   const mkLabel = (txt, cls) => { const d = document.createElement('div'); d.className = 'globe-label ' + (cls || ''); d.textContent = txt; labels && labels.appendChild(d); return d; };
   const jLabel = mkLabel('Jakarta', 'left');
-  const oLabels = routes.filter((r) => r.o.label).map((r) => ({ r, el: mkLabel(r.o.name) }));
+  const oLabels = []; // origin countries are intentionally not labelled (see ORIGINS)
   [jLabel, ...oLabels.map((l) => l.el)].forEach((el) => { el.style.position = 'absolute'; el.style.left = '0'; el.style.top = '0'; el.style.willChange = 'transform,opacity'; el.style.opacity = '0'; });
 
   // ---- layout
@@ -514,17 +515,12 @@ export function createGlobe({ canvas, overlay, labels, reduceMotion = false, bas
 
     renderer.render(scene, cam);
 
-    // ---------- overlay (vector): ground shadow, faint route lines, pins, labels ----------
+    // ---------- overlay (vector): ground shadow, Jakarta pin + label ----------
     ctx.clearRect(0, 0, overlay.width, overlay.height);
     const [gcx, gcy] = toScreen(world.position);
     const edge = toScreen(tmpO.copy(world.position).add(new Vector3(world.scale.x, 0, 0)));
     groundShadow(gcx, gcy, Math.abs(edge[0] - gcx), uniforms.uReady.value * 0.9);
 
-    routes.forEach((r) => {
-      const far = r.o.far;
-      const o = proj(spinToWorld(r.origin)); r.screen = o;
-      dot(o.x, o.y, (far ? 3.2 : 4.5) * sk, '#fff', ORANGE, far ? 1.5 : 2, live * o.v);
-    });
 
     // Jakarta pin + pulse
     const jIn = live;
