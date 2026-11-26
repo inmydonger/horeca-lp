@@ -1,0 +1,10 @@
+<!doctype html><meta charset="utf-8"><title>globe test</title>
+<style>html,body{margin:0;background:#fbf8ee;font-family:sans-serif}.st{position:relative;width:100vw;height:100vh;overflow:hidden}canvas{position:absolute;inset:0;width:100%;height:100%}.globe-label{position:absolute;left:0;top:0;font:700 14px sans-serif}</style>
+<div class="st"><canvas id="gl"></canvas><canvas id="ov"></canvas><div id="lb"></div></div>
+<script type="module">
+import {createGlobe} from './src/globe.js';
+const g=createGlobe({canvas:gl,overlay:ov,labels:lb,base:'/'});
+const p=+(new URLSearchParams(location.search).get('p')||0);g.setProgress(p);
+window.__g=g; g.start();
+setTimeout(()=>{window.__ready=1},3500);
+</script>
