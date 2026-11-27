@@ -2,7 +2,7 @@
 // English follows Jakub Krehel's better-writing rules; Bahasa Indonesia follows
 // Prasaja's plain-Indonesian guide (sentence case, "Anda" throughout, "dan" not "&",
 // "Rp" with no space, "miliar" spelled out, verb-first buttons).
-// Placeholders still to confirm: [X] working days, WhatsApp [number], volume bands.
+// Placeholders still to confirm: WhatsApp [number], volume bands.
 export const dict = {
   en: {
     'meta.title': 'theHoreca · Imported meat for hotels, restaurants and cafés',
@@ -59,9 +59,8 @@ export const dict = {
     'form.vol': 'Estimated monthly volume', 'form.volph': 'Choose a range', 'form.volerr': 'Choose a monthly volume range.',
     'form.v1': 'Under 100 kg', 'form.v2': '100–500 kg', 'form.v3': '500–1,000 kg', 'form.v4': 'Over 1,000 kg',
     'form.submit': 'Send application', 'form.sending': 'Sending…',
-    'form.note': 'We reply on WhatsApp within [X] working days.',
     'form.doneT': 'Application received',
-    'form.doneD': "We'll review it and reply on WhatsApp within [X] working days.",
+    'form.doneD': "Thank you. Our team will review your application.",
     'foot.company': 'Company', 'foot.partof': 'part of',
     'foot.about': 'PT Horeca Akar Mimpi runs theHoreca, a supply platform for hotels, restaurants and cafés. We source imported meat, keep it frozen and deliver it on one account, with the paperwork your finance team needs.',
     'foot.customers': 'Customers', 'foot.login': 'Log in to the dashboard', 'foot.contact': 'Contact',
@@ -123,9 +122,8 @@ export const dict = {
     'form.vol': 'Perkiraan volume per bulan', 'form.volph': 'Pilih rentang', 'form.volerr': 'Pilih rentang volume per bulan.',
     'form.v1': 'Kurang dari 100 kg', 'form.v2': '100 hingga 500 kg', 'form.v3': '500 hingga 1.000 kg', 'form.v4': 'Lebih dari 1.000 kg',
     'form.submit': 'Kirim pengajuan', 'form.sending': 'Mengirim…',
-    'form.note': 'Kami membalas lewat WhatsApp dalam [X] hari kerja.',
     'form.doneT': 'Pengajuan diterima',
-    'form.doneD': 'Kami akan meninjaunya dan membalas lewat WhatsApp dalam [X] hari kerja.',
+    'form.doneD': 'Terima kasih. Tim kami akan meninjau pengajuan Anda.',
     'foot.company': 'Perusahaan', 'foot.partof': 'bagian dari',
     'foot.about': 'PT Horeca Akar Mimpi menjalankan theHoreca, platform pasokan untuk hotel, restoran, dan kafe. Kami menyediakan daging impor, menyimpannya tetap beku, dan mengirimkannya lewat satu akun, lengkap dengan dokumen yang dibutuhkan tim keuangan Anda.',
     'foot.customers': 'Pelanggan', 'foot.login': 'Masuk ke dashboard', 'foot.contact': 'Kontak',
