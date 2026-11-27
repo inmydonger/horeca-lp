@@ -1,6 +1,6 @@
 # theHoreca landing page
 
-One-page scrollytelling site built from Figma Draft 5 (file vaF03rBaeuKQSfC4hjje5O, node 26:127).
+One-page scrollytelling site built from Figma Draft 5.
 Stack: Vite 5, GSAP + ScrollTrigger, Lenis smooth scroll, three.js for the Origin globe. No framework.
 
     npm install
