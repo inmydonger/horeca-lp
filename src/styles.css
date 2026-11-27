@@ -377,8 +377,8 @@ ol, ul { margin: 0; padding: 0; list-style: none; }
   .stage { --u: calc(100cqw / 620); }
   .stage .browser { display: none; }
   .stage--ordering { height: calc(730 * var(--u)); }
-  .stage--ordering .phone { --x: 40 !important; --y: 0 !important; }
-  .stage--ordering .toast { --x: 190 !important; --w: 430 !important; }
+  .stage--ordering .phone { --x: 160 !important; --y: 0 !important; } /* centred: (620 - 300) / 2 */
+  .stage--ordering .toast { --x: 95 !important; --w: 430 !important; } /* centred under the phone */
   .stage--ordering .toast[data-status="orange"] { --y: 500 !important; }
   .stage--ordering .toast[data-status="blue"] { --y: 610 !important; }
   .stage--paper { height: calc(640 * var(--u)); }
