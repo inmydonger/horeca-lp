@@ -469,7 +469,7 @@ export function createGlobe({ canvas, overlay, labels, reduceMotion = false, bas
     const dt = Math.min(0.05, Math.max(0, (now - last) / 1000)); last = now; clock += dt;
     pSm += (progress - pSm) * Math.min(1, dt * 8);
     const p = reduceMotion ? 1 : pSm;
-    const narrow = vw <= NARROW;
+    const narrow = vw <= NARROW || vw / vh < 0.9; // phones and portrait tablets stack copy over globe
 
     // K1 → K3 placement (world units; unit = full viewport height)
     const unit = visH;

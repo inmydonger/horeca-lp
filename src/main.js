@@ -111,8 +111,11 @@ if (!reduce) {
     globe.ready.then(() => gsap.to(canvas, { opacity: 1, duration: reduce ? 0 : 0.8, ease: 'power2.out' }));
   }
   const copy = $('#originCopy');
+  // Stacked layout (phones, portrait tablets): the copy sits over the globe's path, so it waits
+  // until the globe has mostly settled below it instead of fading in over it.
+  const stacked = window.matchMedia('(max-width: 760px), (max-aspect-ratio: 9/10)');
   const setCopy = (p) => {
-    const t = gsap.utils.clamp(0, 1, (p - 0.3) / 0.25);
+    const t = stacked.matches ? gsap.utils.clamp(0, 1, (p - 0.46) / 0.18) : gsap.utils.clamp(0, 1, (p - 0.3) / 0.25);
     const e = 1 - Math.pow(1 - t, 3);
     copy.style.opacity = e;
     copy.style.translate = `${(1 - e) * -24}px 0`;
