@@ -426,7 +426,6 @@ ol, ul { margin: 0; padding: 0; list-style: none; }
 .field.is-invalid .field__err { display: block; }
 .form .btn { justify-self: start; margin-top: 6px; min-width: 200px; }
 .form .btn[disabled] { opacity: .7; cursor: progress; }
-.form__note { font-size: 13px; color: var(--muted); }
 .form__done { position: absolute; inset: 0; border-radius: inherit; background: #fff; display: grid; place-content: center; text-align: center; gap: 10px; padding: 40px; }
 .form__done[hidden] { display: none; }
 .form__done h3 { font-size: 28px; font-weight: 800; letter-spacing: -.025em; }
